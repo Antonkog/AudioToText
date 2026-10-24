@@ -196,7 +196,6 @@ final class TranscriptionController: ObservableObject {
     @Published var isDropTargeted = false
     @Published var isShowingError = false
     @Published private(set) var errorMessageState = LocalizedMessage("error.generic", "")
-    @Published var errorNeedsScreenRecordingPermission = false
     @Published var statusIsError = false
     @Published var audioLevel: CGFloat = 0.02
     @Published var recordingSeconds = 0
@@ -560,13 +559,6 @@ final class TranscriptionController: ObservableObject {
         }
     }
 
-    func openScreenRecordingSettings() {
-        guard let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
-        ) else { return }
-        NSWorkspace.shared.open(url)
-    }
-
     private func transcribe(url: URL, suggestedName: String) async {
         let accessing = url.startAccessingSecurityScopedResource()
         defer {
@@ -755,8 +747,9 @@ final class TranscriptionController: ObservableObject {
             statusMessage = LocalizedMessage("error.generic", error.localizedDescription)
             errorMessageState = LocalizedMessage("error.generic", error.localizedDescription)
         }
-        errorNeedsScreenRecordingPermission = (error as? AppError) == .screenRecordingPermissionDenied
-        isShowingError = true
+        // CGRequestScreenCaptureAccess presents the native macOS permission UI.
+        // Avoid covering it with an app alert while the system prompt is appearing.
+        isShowingError = (error as? AppError) != .screenRecordingPermissionDenied
     }
 }
 

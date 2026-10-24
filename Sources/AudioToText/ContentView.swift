@@ -35,11 +35,6 @@ struct ContentView: View {
             controller.handleDrop(providers)
         }
         .alert("AudioToText", isPresented: $controller.isShowingError) {
-            if controller.errorNeedsScreenRecordingPermission {
-                Button(controller.localized("button.open_screen_settings")) {
-                    controller.openScreenRecordingSettings()
-                }
-            }
             Button(controller.localized("button.ok"), role: .cancel) {}
         } message: {
             Text(controller.errorMessage)
@@ -570,6 +565,7 @@ private struct AudioLanguagePickerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(controller.localized("language.choose_audio"))
                 .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary)
 
             TextField(controller.localized("language.search"), text: $searchText)
                 .textFieldStyle(.roundedBorder)
@@ -594,6 +590,7 @@ private struct AudioLanguagePickerView: View {
                 }
             }
         }
+        .foregroundStyle(.primary)
         .padding(16)
         .frame(width: 330, height: 430)
     }
@@ -611,9 +608,10 @@ private struct AudioLanguagePickerView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.primary)
                     Text(subtitle)
                         .font(.system(size: 10))
-                        .foregroundStyle(AppTheme.mutedInk)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()

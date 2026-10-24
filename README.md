@@ -6,19 +6,23 @@ No API key, account, subscription, or usage fee is required. Whisper models are 
 
 ## Download
 
-[**Download AudioToText 0.2.0 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.2.0.dmg) · [SHA-256 checksum](Releases/AudioToText-0.2.0.dmg.sha256)
+[**Download AudioToText 0.2.1 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.2.1.dmg) · [SHA-256 checksum](Releases/AudioToText-0.2.1.dmg.sha256)
 
 Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
 ## Screenshots
 
-### Track progress and cancel
+### Recording from Mac
 
-![AudioToText transcribing a video with circular percentage progress and a Cancel button](Screenshots/transcription-progress.png)
+![Recording from Mac](Screenshots/mac-audio-recording.png)
 
-### Edit and save a transcript
+### Transcription loading after recording is done
 
-![AudioToText showing an editable transcript saved as a text file](Screenshots/saved-transcript.png)
+![Transcription loading after recording is done](Screenshots/mac-audio-transcription-progress.png)
+
+### Transcription finished
+
+![Transcription finished](Screenshots/mac-audio-transcription-finished.png)
 
 ## Features
 
@@ -103,7 +107,7 @@ The DMG and its SHA-256 checksum are written to `dist/`.
 ## macOS permissions
 
 - **Microphone** permission is requested only when microphone recording is used.
-- **Screen & System Audio Recording** permission is required to capture Mac audio.
+- **Screen & System Audio Recording** permission is required to capture Mac audio. AudioToText uses the native macOS permission prompt and does not place an app alert over it.
 
 If Mac Audio reports that access was declined, open **System Settings → Privacy & Security → Screen & System Audio Recording**, enable AudioToText, then quit and reopen the app.
 
