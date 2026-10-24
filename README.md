@@ -4,13 +4,13 @@ AudioToText is a free, open-source macOS app that turns English speech into edit
 
 No API key, account, subscription, or usage fee is required. Whisper models are downloaded once and then work offline.
 
-## Screenshots
+## Download
 
-### Record and transcribe speech
+[**Download AudioToText 0.1.0 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.1.0.dmg) · [SHA-256 checksum](Releases/AudioToText-0.1.0.dmg.sha256)
 
-![AudioToText recording and transcribing microphone audio](Screenshots/microphone-transcription.png)
+Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
-### Edit and save the transcript
+## Screenshot
 
 ![AudioToText showing an editable transcript saved as a text file](Screenshots/saved-transcript.png)
 
@@ -72,6 +72,14 @@ Run the tests with:
 ```sh
 swift test
 ```
+
+Create a distributable DMG with:
+
+```sh
+./Scripts/build-dmg.sh
+```
+
+The DMG and its SHA-256 checksum are written to `dist/`.
 
 ## macOS permissions
 
