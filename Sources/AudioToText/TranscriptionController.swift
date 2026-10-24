@@ -40,9 +40,9 @@ enum AudioSource: String, CaseIterable, Identifiable {
         case .file:
             "Choose a recording, podcast, voice note, or movie. You can also drag a file anywhere into this window."
         case .systemAudio:
-            "Start recording, then play a movie, YouTube video, meeting, or any other app. Stop when you want the transcript."
+            "Start recording, then play a movie, YouTube video, meeting, or any other app. Stop when you want the transcript; recording ends automatically after 2 hours."
         case .microphone:
-            "Useful for dictation, interviews, and in-person conversations. Stop the recording to run local transcription."
+            "Useful for dictation, interviews, and in-person conversations. Stop to transcribe; recording ends automatically after 2 hours."
         }
     }
 }
@@ -139,6 +139,8 @@ final class TranscriptionController: ObservableObject {
     @Published var savedTranscriptURL: URL?
     @Published var isBusy = false
     @Published var isRecording = false
+    @Published var isTranscribing = false
+    @Published var transcriptionProgress = 0.0
     @Published var isModelReady = false
     @Published var selectedModelIsDownloaded: Bool
     @Published var isDownloadingModel = false
@@ -157,8 +159,10 @@ final class TranscriptionController: ObservableObject {
     private var systemRecorder: SystemAudioRecorder?
     private var recordingURL: URL?
     private var recordingTimer: Timer?
+    private var transcriptionTask: Task<Void, Never>?
     private var isApplyingTranscript = false
     private static let modelDefaultsKey = "selectedWhisperModel"
+    private static let maximumRecordingSeconds = 2 * 60 * 60
 
     init() {
         let saved = UserDefaults.standard.string(forKey: Self.modelDefaultsKey)
@@ -305,10 +309,24 @@ final class TranscriptionController: ObservableObject {
             isShowingImporter = true
             return
         }
+        guard !isBusy else { return }
 
-        Task {
-            await transcribe(url: selectedFile, suggestedName: selectedFile.deletingPathExtension().lastPathComponent)
-        }
+        beginTranscription(
+            url: selectedFile,
+            suggestedName: selectedFile.deletingPathExtension().lastPathComponent
+        )
+    }
+
+    func chooseAnotherFile() {
+        guard !isBusy else { return }
+        isShowingImporter = true
+    }
+
+    func cancelTranscription() {
+        guard isTranscribing else { return }
+        statusIsError = false
+        status = "Cancelling transcription…"
+        transcriptionTask?.cancel()
     }
 
     func startRecording() {
@@ -334,8 +352,7 @@ final class TranscriptionController: ObservableObject {
 
                 switch source {
                 case .microphone:
-                    let allowed = await AVCaptureDevice.requestAccess(for: .audio)
-                    guard allowed else { throw AppError.microphonePermissionDenied }
+                    try await ensureMicrophonePermission()
 
                     let recorder = MicrophoneRecorder()
                     try recorder.start(writingTo: url, onLevel: levelHandler)
@@ -374,16 +391,19 @@ final class TranscriptionController: ObservableObject {
         stopTimer()
         status = "Finishing recording…"
 
-        Task {
-            microphoneRecorder?.stop()
-            microphoneRecorder = nil
-            await systemRecorder?.stop()
-            systemRecorder = nil
+        let microphoneRecorder = microphoneRecorder
+        let systemRecorder = systemRecorder
+        self.microphoneRecorder = nil
+        self.systemRecorder = nil
+        let sourceName = source == .microphone ? "Microphone" : "Mac Audio"
 
-            let sourceName = source == .microphone ? "Microphone" : "Mac Audio"
-            await transcribe(url: recordingURL, suggestedName: sourceName)
-            try? FileManager.default.removeItem(at: recordingURL)
-            self.recordingURL = nil
+        beginTranscription(
+            url: recordingURL,
+            suggestedName: sourceName,
+            removeInputWhenFinished: true
+        ) {
+            microphoneRecorder?.stop()
+            await systemRecorder?.stop()
         }
     }
 
@@ -430,30 +450,100 @@ final class TranscriptionController: ObservableObject {
         do {
             resetForWork()
             isBusy = true
+            try Task.checkCancellation()
 
             guard isModelReady, whisper.isReady(model: selectedModel) else {
                 throw AppError.modelNotReady
             }
 
             status = "Preparing audio…"
-            let prepared = try await MediaPreparer.prepare(url)
+            let prepared = try await MediaPreparer.prepare(url) { [weak self] fraction in
+                guard let self, self.isTranscribing else { return }
+                self.transcriptionProgress = max(
+                    self.transcriptionProgress,
+                    min(0.1, fraction * 0.1)
+                )
+            }
             defer { prepared.removeTemporaryFileIfNeeded() }
 
             status = "Transcribing locally with Whisper…"
-            let text = try await whisper.transcribe(prepared.url, model: selectedModel)
+            let text = try await whisper.transcribe(
+                prepared.url,
+                model: selectedModel
+            ) { [weak self] fraction in
+                Task { @MainActor in
+                    guard let self, self.isTranscribing else { return }
+                    self.transcriptionProgress = max(
+                        self.transcriptionProgress,
+                        min(0.99, 0.1 + fraction * 0.9)
+                    )
+                }
+            }
 
             guard !text.isEmpty else { throw AppError.noSpeechFound }
             applyTranscript(text)
 
             let output = try TranscriptStore.save(text, suggestedName: suggestedName)
             savedTranscriptURL = output
+            transcriptionProgress = 1
             status = "Done — saved \(output.lastPathComponent)"
             statusIsError = false
+        } catch is CancellationError {
+            transcriptionProgress = 0
+            statusIsError = false
+            status = "Transcription cancelled"
         } catch {
             show(error)
         }
 
         isBusy = false
+    }
+
+    private func beginTranscription(
+        url: URL,
+        suggestedName: String,
+        removeInputWhenFinished: Bool = false,
+        beforeTranscription: (@MainActor () async -> Void)? = nil
+    ) {
+        guard transcriptionTask == nil else { return }
+
+        isBusy = true
+        isTranscribing = true
+        transcriptionProgress = 0
+        statusIsError = false
+        status = beforeTranscription == nil ? "Preparing audio…" : "Finishing recording…"
+
+        transcriptionTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if removeInputWhenFinished {
+                    try? FileManager.default.removeItem(at: url)
+                    if self.recordingURL == url {
+                        self.recordingURL = nil
+                    }
+                }
+                self.isTranscribing = false
+                self.isBusy = false
+                self.transcriptionTask = nil
+            }
+
+            if let beforeTranscription {
+                await beforeTranscription()
+            }
+
+            guard !Task.isCancelled else {
+                self.markTranscriptionCancelled()
+                return
+            }
+
+            await self.transcribe(url: url, suggestedName: suggestedName)
+        }
+    }
+
+    private func markTranscriptionCancelled() {
+        transcriptionProgress = 0
+        statusIsError = false
+        status = "Transcription cancelled"
     }
 
     private func applyTranscript(_ value: String) {
@@ -471,7 +561,11 @@ final class TranscriptionController: ObservableObject {
         stopTimer()
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.recordingSeconds += 1
+                guard let self else { return }
+                self.recordingSeconds += 1
+                if self.recordingSeconds >= Self.maximumRecordingSeconds {
+                    self.stopRecording()
+                }
             }
         }
     }
@@ -501,6 +595,21 @@ final class TranscriptionController: ObservableObject {
             try? FileManager.default.removeItem(at: recordingURL)
         }
         recordingURL = nil
+    }
+
+    private func ensureMicrophonePermission() async throws {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            return
+        case .notDetermined:
+            guard await AVCaptureDevice.requestAccess(for: .audio) else {
+                throw AppError.microphonePermissionDenied
+            }
+        case .denied, .restricted:
+            throw AppError.microphonePermissionDenied
+        @unknown default:
+            throw AppError.microphonePermissionDenied
+        }
     }
 
     private func show(_ error: Error) {

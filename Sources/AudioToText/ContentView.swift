@@ -220,7 +220,7 @@ struct ContentView: View {
 
             if controller.shouldShowStatusRow {
                 HStack(spacing: 8) {
-                    if controller.isBusy && !controller.isRecording {
+                    if controller.isBusy && !controller.isRecording && !controller.isTranscribing {
                         ProgressView().controlSize(.small)
                     } else if controller.savedTranscriptURL != nil {
                         Button {
@@ -270,34 +270,54 @@ struct ContentView: View {
 
     @ViewBuilder
     private var actionButton: some View {
-        switch controller.source {
-        case .file:
-            Button {
-                if controller.selectedFile == nil {
-                    controller.isShowingImporter = true
-                } else {
-                    controller.transcribeSelectedFile()
-                }
-            } label: {
-                Label(
-                    controller.selectedFile == nil ? "Choose File" : "Transcribe",
-                    systemImage: controller.selectedFile == nil ? "folder" : "text.badge.checkmark"
-                )
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(controller.isBusy)
+        if controller.isTranscribing {
+            HStack(spacing: 12) {
+                CircularProgressView(progress: controller.transcriptionProgress)
 
-        case .systemAudio, .microphone:
-            Button {
-                controller.isRecording ? controller.stopRecording() : controller.startRecording()
-            } label: {
-                Label(
-                    controller.isRecording ? "Stop & Transcribe" : "Start Recording",
-                    systemImage: controller.isRecording ? "stop.fill" : "record.circle"
-                )
+                Button {
+                    controller.cancelTranscription()
+                } label: {
+                    Label("Cancel", systemImage: "xmark.circle.fill")
+                }
+                .buttonStyle(PrimaryButtonStyle(isDestructive: true))
             }
-            .buttonStyle(PrimaryButtonStyle(isDestructive: controller.isRecording))
-            .disabled(controller.isBusy && !controller.isRecording)
+            .transition(.opacity)
+        } else {
+            switch controller.source {
+            case .file:
+                Button {
+                    if controller.selectedFile == nil {
+                        controller.isShowingImporter = true
+                    } else if controller.savedTranscriptURL != nil {
+                        controller.chooseAnotherFile()
+                    } else {
+                        controller.transcribeSelectedFile()
+                    }
+                } label: {
+                    Label(
+                        controller.selectedFile == nil || controller.savedTranscriptURL != nil
+                            ? (controller.savedTranscriptURL == nil ? "Choose File" : "Choose Another")
+                            : "Transcribe",
+                        systemImage: controller.selectedFile == nil || controller.savedTranscriptURL != nil
+                            ? "folder"
+                            : "text.badge.checkmark"
+                    )
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(controller.isBusy)
+
+            case .systemAudio, .microphone:
+                Button {
+                    controller.isRecording ? controller.stopRecording() : controller.startRecording()
+                } label: {
+                    Label(
+                        controller.isRecording ? "Stop & Transcribe" : "Start Recording",
+                        systemImage: controller.isRecording ? "stop.fill" : "record.circle"
+                    )
+                }
+                .buttonStyle(PrimaryButtonStyle(isDestructive: controller.isRecording))
+                .disabled(controller.isBusy && !controller.isRecording)
+            }
         }
     }
 
@@ -390,6 +410,38 @@ struct ContentView: View {
         }
         .frame(maxHeight: .infinity)
         .cardStyle()
+    }
+}
+
+private struct CircularProgressView: View {
+    let progress: Double
+
+    private var clampedProgress: Double {
+        min(1, max(0, progress))
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(AppTheme.teal.opacity(0.16), lineWidth: 4)
+
+            Circle()
+                .trim(from: 0, to: clampedProgress)
+                .stroke(
+                    AppTheme.teal,
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+
+            Text("\(Int(clampedProgress * 100))%")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(AppTheme.ink)
+                .monospacedDigit()
+        }
+        .frame(width: 48, height: 48)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Transcription progress")
+        .accessibilityValue("\(Int(clampedProgress * 100)) percent")
     }
 }
 

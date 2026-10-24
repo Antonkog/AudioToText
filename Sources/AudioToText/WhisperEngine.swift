@@ -49,10 +49,23 @@ final class WhisperEngine {
         loadedModel = model
     }
 
-    func transcribe(_ url: URL, model: WhisperModelOption) async throws -> String {
+    func transcribe(
+        _ url: URL,
+        model: WhisperModelOption,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> String {
         guard let pipeline, loadedModel == model else { throw AppError.modelNotReady }
 
-        let results = try await pipeline.transcribe(audioPath: url.path)
+        onProgress(0)
+        let results = try await pipeline.transcribe(
+            audioPath: url.path,
+            callback: { _ in
+                onProgress(pipeline.progress.fractionCompleted)
+                return !Task.isCancelled
+            }
+        )
+        try Task.checkCancellation()
+        onProgress(1)
         return TranscriptUtilities.cleaned(results.map(\.text))
     }
 

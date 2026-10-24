@@ -6,11 +6,17 @@ No API key, account, subscription, or usage fee is required. Whisper models are 
 
 ## Download
 
-[**Download AudioToText 0.1.0 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.1.0.dmg) · [SHA-256 checksum](Releases/AudioToText-0.1.0.dmg.sha256)
+[**Download AudioToText 0.1.1 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.1.1.dmg) · [SHA-256 checksum](Releases/AudioToText-0.1.1.dmg.sha256)
 
 Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
-## Screenshot
+## Screenshots
+
+### Track progress and cancel
+
+![AudioToText transcribing a video with circular percentage progress and a Cancel button](Screenshots/transcription-progress.png)
+
+### Edit and save a transcript
 
 ![AudioToText showing an editable transcript saved as a text file](Screenshots/saved-transcript.png)
 
@@ -20,6 +26,7 @@ Open the DMG and drag **AudioToText** to the **Applications** folder. This commu
 - Open an audio or video file with AudioToText directly from Finder.
 - Capture Mac audio from YouTube, movies, meetings, and other apps.
 - Record speech, interviews, or dictation from a microphone.
+- Automatically stop any recording after two hours.
 - Choose between three English Whisper models:
   - **Tiny English** — fastest, approximately 153 MB.
   - **Base English** — balanced, approximately 147 MB.
@@ -27,6 +34,7 @@ Open the DMG and drag **AudioToText** to the **Applications** folder. This commu
 - See download percentage and progress after explicitly pressing **Download**.
 - Automatically load an installed model when it is selected.
 - Use the folder button to reveal an installed model in Finder.
+- Shows real transcription percentage and provides cancellation for files, microphone recordings, and Mac audio.
 - Edit, copy, and save transcripts as UTF-8 `.txt` files.
 - Automatically save completed transcripts in `~/Documents/AudioToText`.
 - Click **Done — saved…** or **Saved to…** to reveal the exact transcript file in Finder.
@@ -86,7 +94,7 @@ The DMG and its SHA-256 checksum are written to `dist/`.
 - **Microphone** permission is requested only when microphone recording is used.
 - **Screen & System Audio Recording** permission is required to capture Mac audio.
 
-If Mac Audio reports that access was declined, open **System Settings → Privacy & Security → Screen & System Audio Recording**, enable AudioToText, then quit and reopen the app.
+If Mac Audio reports that access was declined, open **System Settings → Privacy & Security → Screen & System Audio Recording**, enable4AudioToText, then quit and reopen the app.
 
 Local ad-hoc builds receive a new code identity when the executable changes, so macOS may ask for permission again after rebuilding. To preserve identity across builds, sign with an installed Apple code-signing identity:
 

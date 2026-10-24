@@ -2,6 +2,14 @@ import AVFoundation
 import Foundation
 import UniformTypeIdentifiers
 
+private final class SendableExportSession: @unchecked Sendable {
+    let value: AVAssetExportSession
+
+    init(_ value: AVAssetExportSession) {
+        self.value = value
+    }
+}
+
 struct PreparedMedia {
     let url: URL
     let isTemporary: Bool
@@ -13,12 +21,17 @@ struct PreparedMedia {
 }
 
 enum MediaPreparer {
-    static func prepare(_ input: URL) async throws -> PreparedMedia {
+    @MainActor
+    static func prepare(
+        _ input: URL,
+        onProgress: @escaping (Double) -> Void = { _ in }
+    ) async throws -> PreparedMedia {
         let contentType = try? input.resourceValues(forKeys: [.contentTypeKey]).contentType
         let isMovie = contentType?.conforms(to: .movie) == true
             || UTType(filenameExtension: input.pathExtension)?.conforms(to: .movie) == true
 
         guard isMovie else {
+            onProgress(1)
             return PreparedMedia(url: input, isTemporary: false)
         }
 
@@ -32,8 +45,32 @@ enum MediaPreparer {
         guard let exporter = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
             throw AppError.mediaHasNoAudio
         }
+        let sendableExporter = SendableExportSession(exporter)
 
-        try await exporter.export(to: output, as: .m4a)
-        return PreparedMedia(url: output, isTemporary: true)
+        let progressTask = Task { @MainActor in
+            while !Task.isCancelled {
+                onProgress(Double(exporter.progress))
+                do {
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                } catch {
+                    break
+                }
+            }
+        }
+        defer { progressTask.cancel() }
+
+        do {
+            try await withTaskCancellationHandler {
+                try await exporter.export(to: output, as: .m4a)
+            } onCancel: {
+                sendableExporter.value.cancelExport()
+            }
+            try Task.checkCancellation()
+            onProgress(1)
+            return PreparedMedia(url: output, isTemporary: true)
+        } catch {
+            try? FileManager.default.removeItem(at: output)
+            throw error
+        }
     }
 }
