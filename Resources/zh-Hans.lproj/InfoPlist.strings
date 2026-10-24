@@ -1,0 +1,3 @@
+"CFBundleTypeName" = "音频或视频";
+"NSMicrophoneUsageDescription" = "AudioToText 仅在你选择麦克风录制时使用麦克风。";
+"NSScreenCaptureUsageDescription" = "AudioToText 捕捉系统音频，以便转录影片、网站和其他应用。";

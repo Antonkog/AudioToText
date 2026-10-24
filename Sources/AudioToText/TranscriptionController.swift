@@ -11,11 +11,11 @@ enum AudioSource: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var titleKey: String {
         switch self {
-        case .file: "File"
-        case .systemAudio: "Mac Audio"
-        case .microphone: "Microphone"
+        case .file: "source.file"
+        case .systemAudio: "source.mac_audio"
+        case .microphone: "source.microphone"
         }
     }
 
@@ -27,22 +27,22 @@ enum AudioSource: String, CaseIterable, Identifiable {
         }
     }
 
-    var headline: String {
+    var headlineKey: String {
         switch self {
-        case .file: "Transcribe an audio or video file"
-        case .systemAudio: "Capture sound playing on this Mac"
-        case .microphone: "Record speech from your microphone"
+        case .file: "source.file.headline"
+        case .systemAudio: "source.mac_audio.headline"
+        case .microphone: "source.microphone.headline"
         }
     }
 
-    var instructions: String {
+    var instructionsKey: String {
         switch self {
         case .file:
-            "Choose a recording, podcast, voice note, or movie. You can also drag a file anywhere into this window."
+            "source.file.instructions"
         case .systemAudio:
-            "Start recording, then play a movie, YouTube video, meeting, or any other app. Stop when you want the transcript; recording ends automatically after 2 hours."
+            "source.mac_audio.instructions"
         case .microphone:
-            "Useful for dictation, interviews, and in-person conversations. Stop to transcribe; recording ends automatically after 2 hours."
+            "source.microphone.instructions"
         }
     }
 }
@@ -51,22 +51,43 @@ enum WhisperModelOption: String, CaseIterable, Identifiable {
     case tinyEnglish = "tiny.en"
     case baseEnglish = "base.en"
     case smallEnglish = "small.en"
+    case tinyMultilingual = "tiny"
+    case baseMultilingual = "base"
+    case smallMultilingual = "small"
+    case mediumMultilingual = "medium"
+    case largeV3Multilingual = "large-v3-v20240930_626MB"
 
     var id: String { rawValue }
 
-    var title: String {
+    static let englishModels: [WhisperModelOption] = [.tinyEnglish, .baseEnglish, .smallEnglish]
+    static let multilingualModels: [WhisperModelOption] = [
+        .tinyMultilingual,
+        .baseMultilingual,
+        .smallMultilingual,
+        .mediumMultilingual,
+        .largeV3Multilingual
+    ]
+
+    var titleKey: String {
         switch self {
-        case .tinyEnglish: "Tiny English"
-        case .baseEnglish: "Base English"
-        case .smallEnglish: "Small English"
+        case .tinyEnglish: "model.tiny_english"
+        case .baseEnglish: "model.base_english"
+        case .smallEnglish: "model.small_english"
+        case .tinyMultilingual: "model.tiny_multilingual"
+        case .baseMultilingual: "model.base_multilingual"
+        case .smallMultilingual: "model.small_multilingual"
+        case .mediumMultilingual: "model.medium_multilingual"
+        case .largeV3Multilingual: "model.large_v3_multilingual"
         }
     }
 
-    var detail: String {
+    var detailKey: String {
         switch self {
-        case .tinyEnglish: "Fastest · ~153 MB"
-        case .baseEnglish: "Balanced · ~147 MB"
-        case .smallEnglish: "Most accurate · ~487 MB"
+        case .tinyEnglish, .tinyMultilingual: "model.detail.fastest"
+        case .baseEnglish, .baseMultilingual: "model.detail.fast"
+        case .smallEnglish, .smallMultilingual: "model.detail.balanced"
+        case .mediumMultilingual: "model.detail.accurate"
+        case .largeV3Multilingual: "model.detail.most_accurate"
         }
     }
 
@@ -75,6 +96,18 @@ enum WhisperModelOption: String, CaseIterable, Identifiable {
         case .tinyEnglish: "~153 MB"
         case .baseEnglish: "~147 MB"
         case .smallEnglish: "~487 MB"
+        case .tinyMultilingual: "~76.6 MB"
+        case .baseMultilingual: "~147 MB"
+        case .smallMultilingual: "~486 MB"
+        case .mediumMultilingual: "~1.53 GB"
+        case .largeV3Multilingual: "~627 MB"
+        }
+    }
+
+    var isMultilingual: Bool {
+        switch self {
+        case .tinyEnglish, .baseEnglish, .smallEnglish: false
+        case .tinyMultilingual, .baseMultilingual, .smallMultilingual, .mediumMultilingual, .largeV3Multilingual: true
         }
     }
 
@@ -93,6 +126,10 @@ enum WhisperModelOption: String, CaseIterable, Identifiable {
 
     var isDownloaded: Bool {
         guard let localFolder else { return false }
+        return Self.isDownloaded(in: localFolder)
+    }
+
+    static func isDownloaded(in folder: URL) -> Bool {
         let requiredFiles = [
             "config.json",
             "AudioEncoder.mlmodelc/weights/weight.bin",
@@ -100,7 +137,7 @@ enum WhisperModelOption: String, CaseIterable, Identifiable {
             "TextDecoder.mlmodelc/weights/weight.bin"
         ]
         return requiredFiles.allSatisfy { relativePath in
-            let file = localFolder.appendingPathComponent(relativePath)
+            let file = folder.appendingPathComponent(relativePath)
             guard
                 FileManager.default.fileExists(atPath: file.path),
                 let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize
@@ -113,6 +150,16 @@ enum WhisperModelOption: String, CaseIterable, Identifiable {
 @MainActor
 final class TranscriptionController: ObservableObject {
     @Published var source: AudioSource = .file
+    @Published var interfaceLanguage: AppLanguage {
+        didSet {
+            UserDefaults.standard.set(interfaceLanguage.rawValue, forKey: Self.interfaceLanguageDefaultsKey)
+        }
+    }
+    @Published var audioLanguageSelection: AudioLanguageSelection {
+        didSet {
+            UserDefaults.standard.set(audioLanguageSelection.storedValue, forKey: Self.audioLanguageDefaultsKey)
+        }
+    }
     @Published var selectedModel: WhisperModelOption {
         didSet {
             UserDefaults.standard.set(selectedModel.rawValue, forKey: Self.modelDefaultsKey)
@@ -122,9 +169,9 @@ final class TranscriptionController: ObservableObject {
             isDownloadingModel = false
             modelDownloadProgress = 0
             if !isBusy {
-                status = selectedModelIsDownloaded
-                    ? "Loading \(selectedModel.title) from disk…"
-                    : "Choose a source to begin"
+                statusMessage = selectedModelIsDownloaded
+                    ? LocalizedMessage("status.loading_model", localizedModelName(selectedModel))
+                    : LocalizedMessage("status.choose_source")
             }
         }
     }
@@ -134,7 +181,7 @@ final class TranscriptionController: ObservableObject {
             try? transcript.write(to: savedTranscriptURL, atomically: true, encoding: .utf8)
         }
     }
-    @Published var status = "Choose a source to begin"
+    @Published private(set) var statusMessage = LocalizedMessage("status.choose_source")
     @Published var selectedFile: URL?
     @Published var savedTranscriptURL: URL?
     @Published var isBusy = false
@@ -148,11 +195,13 @@ final class TranscriptionController: ObservableObject {
     @Published var isShowingImporter = false
     @Published var isDropTargeted = false
     @Published var isShowingError = false
-    @Published var errorMessage = ""
+    @Published private(set) var errorMessageState = LocalizedMessage("error.generic", "")
     @Published var errorNeedsScreenRecordingPermission = false
     @Published var statusIsError = false
     @Published var audioLevel: CGFloat = 0.02
     @Published var recordingSeconds = 0
+    @Published private(set) var completedWithAutomaticLanguage = false
+    @Published private(set) var detectedLanguageCode: String?
 
     private let whisper = WhisperEngine()
     private var microphoneRecorder: MicrophoneRecorder?
@@ -162,9 +211,16 @@ final class TranscriptionController: ObservableObject {
     private var transcriptionTask: Task<Void, Never>?
     private var isApplyingTranscript = false
     private static let modelDefaultsKey = "selectedWhisperModel"
+    private static let interfaceLanguageDefaultsKey = "selectedInterfaceLanguage"
+    private static let audioLanguageDefaultsKey = "selectedAudioLanguage"
     private static let maximumRecordingSeconds = 2 * 60 * 60
 
     init() {
+        let savedInterfaceLanguage = UserDefaults.standard.string(forKey: Self.interfaceLanguageDefaultsKey)
+        interfaceLanguage = AppLanguage(rawValue: savedInterfaceLanguage ?? "") ?? .system
+        audioLanguageSelection = AudioLanguageSelection(
+            storedValue: UserDefaults.standard.string(forKey: Self.audioLanguageDefaultsKey)
+        )
         let saved = UserDefaults.standard.string(forKey: Self.modelDefaultsKey)
         let model = WhisperModelOption(rawValue: saved ?? "") ?? .baseEnglish
         selectedModel = model
@@ -175,6 +231,69 @@ final class TranscriptionController: ObservableObject {
                 self?.loadSelectedModelFromDisk()
             }
         }
+    }
+
+    var status: String {
+        AppLocalization.string(statusMessage, language: interfaceLanguage)
+    }
+
+    var errorMessage: String {
+        AppLocalization.string(errorMessageState, language: interfaceLanguage)
+    }
+
+    var interfaceLocale: Locale { interfaceLanguage.locale }
+    var interfaceLayoutDirection: LayoutDirection { interfaceLanguage.layoutDirection }
+    var supportedAudioLanguageCodes: [String] {
+        AppLocalization.supportedAudioLanguageCodes.sorted {
+            audioLanguageName($0).localizedStandardCompare(audioLanguageName($1)) == .orderedAscending
+        }
+    }
+
+    var activeAudioLanguageSelection: AudioLanguageSelection {
+        selectedModel.isMultilingual ? audioLanguageSelection : .language("en")
+    }
+
+    var audioLanguageDisplayName: String {
+        switch activeAudioLanguageSelection {
+        case .automatic:
+            localized("language.automatic")
+        case let .language(code):
+            audioLanguageName(code)
+        }
+    }
+
+    var detectedLanguageDisplayName: String {
+        guard let detectedLanguageCode else { return localized("language.unknown") }
+        return audioLanguageName(detectedLanguageCode)
+    }
+
+    func localized(_ key: String, _ arguments: String...) -> String {
+        AppLocalization.string(key, language: interfaceLanguage, arguments: arguments)
+    }
+
+    func localized(_ message: LocalizedMessage) -> String {
+        AppLocalization.string(message, language: interfaceLanguage)
+    }
+
+    func localizedModelName(_ model: WhisperModelOption) -> String {
+        localized(model.titleKey)
+    }
+
+    func modelDetail(_ model: WhisperModelOption) -> String {
+        localized(model.detailKey, model.downloadSize)
+    }
+
+    func audioLanguageName(_ code: String) -> String {
+        AppLocalization.audioLanguageName(code: code, interfaceLanguage: interfaceLanguage)
+    }
+
+    func selectInterfaceLanguage(_ language: AppLanguage) {
+        interfaceLanguage = language
+    }
+
+    func selectAudioLanguage(_ selection: AudioLanguageSelection) {
+        guard selectedModel.isMultilingual, !isBusy else { return }
+        audioLanguageSelection = selection
     }
 
     var statusSymbol: String {
@@ -215,8 +334,10 @@ final class TranscriptionController: ObservableObject {
         selectedFile = url
         source = .file
         savedTranscriptURL = nil
+        completedWithAutomaticLanguage = false
+        detectedLanguageCode = nil
         statusIsError = false
-        status = "Ready to transcribe \(url.lastPathComponent)"
+        statusMessage = LocalizedMessage("status.ready_to_transcribe", url.lastPathComponent)
     }
 
     func selectModel(_ model: WhisperModelOption) {
@@ -252,23 +373,28 @@ final class TranscriptionController: ObservableObject {
                 isBusy = true
                 isDownloadingModel = true
                 modelDownloadProgress = 0
-                status = selectedModelIsDownloaded
-                    ? "Loading \(model.title)…"
-                    : "Downloading \(model.title) (\(model.downloadSize))… 0%"
+                statusMessage = selectedModelIsDownloaded
+                    ? LocalizedMessage("status.loading_model", localizedModelName(model))
+                    : LocalizedMessage("status.downloading_model", localizedModelName(model), model.downloadSize, "0")
 
                 try await whisper.downloadAndPrepare(model: model) { [weak self] fraction in
                     Task { @MainActor in
                         guard let self, self.selectedModel == model else { return }
                         let clamped = min(1, max(self.modelDownloadProgress, fraction))
                         self.modelDownloadProgress = clamped
-                        self.status = "Downloading \(model.title) (\(model.downloadSize))… \(Int(clamped * 100))%"
+                        self.statusMessage = LocalizedMessage(
+                            "status.downloading_model",
+                            self.localizedModelName(model),
+                            model.downloadSize,
+                            String(Int(clamped * 100))
+                        )
                     }
                 }
 
                 modelDownloadProgress = 1
                 selectedModelIsDownloaded = true
                 isModelReady = true
-                status = "\(model.title) is ready for offline use"
+                statusMessage = LocalizedMessage("status.model_ready", localizedModelName(model))
             } catch {
                 isModelReady = false
                 show(error)
@@ -284,14 +410,14 @@ final class TranscriptionController: ObservableObject {
         let model = selectedModel
         isBusy = true
         statusIsError = false
-        status = "Loading \(model.title) from disk…"
+        statusMessage = LocalizedMessage("status.loading_model", localizedModelName(model))
 
         Task {
             do {
                 try await whisper.loadDownloaded(model: model)
                 guard selectedModel == model else { return }
                 isModelReady = true
-                status = "Choose a source to begin"
+                statusMessage = LocalizedMessage("status.choose_source")
             } catch {
                 isModelReady = false
                 show(error)
@@ -325,7 +451,7 @@ final class TranscriptionController: ObservableObject {
     func cancelTranscription() {
         guard isTranscribing else { return }
         statusIsError = false
-        status = "Cancelling transcription…"
+        statusMessage = LocalizedMessage("status.cancelling")
         transcriptionTask?.cancel()
     }
 
@@ -357,7 +483,7 @@ final class TranscriptionController: ObservableObject {
                     let recorder = MicrophoneRecorder()
                     try recorder.start(writingTo: url, onLevel: levelHandler)
                     microphoneRecorder = recorder
-                    status = "Recording microphone…"
+                    statusMessage = LocalizedMessage("status.recording_microphone")
 
                 case .systemAudio:
                     let recorder = SystemAudioRecorder()
@@ -368,7 +494,7 @@ final class TranscriptionController: ObservableObject {
                     }
                     try await recorder.start(writingTo: url, onLevel: levelHandler)
                     systemRecorder = recorder
-                    status = "Recording Mac audio… play your source now"
+                    statusMessage = LocalizedMessage("status.recording_mac_audio")
 
                 case .file:
                     throw AppError.invalidSource
@@ -389,13 +515,13 @@ final class TranscriptionController: ObservableObject {
 
         isRecording = false
         stopTimer()
-        status = "Finishing recording…"
+        statusMessage = LocalizedMessage("status.finishing_recording")
 
         let microphoneRecorder = microphoneRecorder
         let systemRecorder = systemRecorder
         self.microphoneRecorder = nil
         self.systemRecorder = nil
-        let sourceName = source == .microphone ? "Microphone" : "Mac Audio"
+        let sourceName = localized(source == .microphone ? "source.microphone" : "source.mac_audio")
 
         beginTranscription(
             url: recordingURL,
@@ -411,7 +537,7 @@ final class TranscriptionController: ObservableObject {
         guard !transcript.isEmpty else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(transcript, forType: .string)
-        status = "Transcript copied"
+        statusMessage = LocalizedMessage("status.transcript_copied")
     }
 
     func saveTranscriptAs() {
@@ -420,7 +546,7 @@ final class TranscriptionController: ObservableObject {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.plainText]
         panel.canCreateDirectories = true
-        panel.nameFieldStringValue = savedTranscriptURL?.lastPathComponent ?? "Transcript.txt"
+        panel.nameFieldStringValue = savedTranscriptURL?.lastPathComponent ?? "\(localized("transcript.title")).txt"
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
@@ -428,7 +554,7 @@ final class TranscriptionController: ObservableObject {
             try transcript.write(to: url, atomically: true, encoding: .utf8)
             savedTranscriptURL = url
             statusIsError = false
-            status = "Saved \(url.lastPathComponent)"
+            statusMessage = LocalizedMessage("status.saved", url.lastPathComponent)
         } catch {
             show(error)
         }
@@ -456,7 +582,7 @@ final class TranscriptionController: ObservableObject {
                 throw AppError.modelNotReady
             }
 
-            status = "Preparing audio…"
+            statusMessage = LocalizedMessage("status.preparing_audio")
             let prepared = try await MediaPreparer.prepare(url) { [weak self] fraction in
                 guard let self, self.isTranscribing else { return }
                 self.transcriptionProgress = max(
@@ -466,10 +592,11 @@ final class TranscriptionController: ObservableObject {
             }
             defer { prepared.removeTemporaryFileIfNeeded() }
 
-            status = "Transcribing locally with Whisper…"
-            let text = try await whisper.transcribe(
+            statusMessage = LocalizedMessage("status.transcribing")
+            let result = try await whisper.transcribe(
                 prepared.url,
-                model: selectedModel
+                model: selectedModel,
+                audioLanguage: activeAudioLanguageSelection
             ) { [weak self] fraction in
                 Task { @MainActor in
                     guard let self, self.isTranscribing else { return }
@@ -480,18 +607,21 @@ final class TranscriptionController: ObservableObject {
                 }
             }
 
-            guard !text.isEmpty else { throw AppError.noSpeechFound }
-            applyTranscript(text)
+            guard !result.text.isEmpty else { throw AppError.noSpeechFound }
+            applyTranscript(result.text)
 
-            let output = try TranscriptStore.save(text, suggestedName: suggestedName)
+            let output = try TranscriptStore.save(result.text, suggestedName: suggestedName)
             savedTranscriptURL = output
+            completedWithAutomaticLanguage = selectedModel.isMultilingual
+                && activeAudioLanguageSelection == .automatic
+            detectedLanguageCode = result.languageCode
             transcriptionProgress = 1
-            status = "Done — saved \(output.lastPathComponent)"
+            statusMessage = LocalizedMessage("status.done_saved", output.lastPathComponent)
             statusIsError = false
         } catch is CancellationError {
             transcriptionProgress = 0
             statusIsError = false
-            status = "Transcription cancelled"
+            statusMessage = LocalizedMessage("status.cancelled")
         } catch {
             show(error)
         }
@@ -511,7 +641,9 @@ final class TranscriptionController: ObservableObject {
         isTranscribing = true
         transcriptionProgress = 0
         statusIsError = false
-        status = beforeTranscription == nil ? "Preparing audio…" : "Finishing recording…"
+        statusMessage = LocalizedMessage(
+            beforeTranscription == nil ? "status.preparing_audio" : "status.finishing_recording"
+        )
 
         transcriptionTask = Task { [weak self] in
             guard let self else { return }
@@ -543,7 +675,7 @@ final class TranscriptionController: ObservableObject {
     private func markTranscriptionCancelled() {
         transcriptionProgress = 0
         statusIsError = false
-        status = "Transcription cancelled"
+        statusMessage = LocalizedMessage("status.cancelled")
     }
 
     private func applyTranscript(_ value: String) {
@@ -555,6 +687,8 @@ final class TranscriptionController: ObservableObject {
     private func resetForWork() {
         statusIsError = false
         savedTranscriptURL = nil
+        completedWithAutomaticLanguage = false
+        detectedLanguageCode = nil
     }
 
     private func startTimer() {
@@ -614,8 +748,13 @@ final class TranscriptionController: ObservableObject {
 
     private func show(_ error: Error) {
         statusIsError = true
-        status = error.localizedDescription
-        errorMessage = error.localizedDescription
+        if let appError = error as? AppError {
+            statusMessage = LocalizedMessage(appError.localizationKey)
+            errorMessageState = LocalizedMessage(appError.localizationKey)
+        } else {
+            statusMessage = LocalizedMessage("error.generic", error.localizedDescription)
+            errorMessageState = LocalizedMessage("error.generic", error.localizedDescription)
+        }
         errorNeedsScreenRecordingPermission = (error as? AppError) == .screenRecordingPermissionDenied
         isShowingError = true
     }
@@ -631,24 +770,28 @@ enum AppError: LocalizedError, Equatable {
     case modelNotReady
     case mediaHasNoAudio
 
-    var errorDescription: String? {
+    var localizationKey: String {
         switch self {
         case .invalidSource:
-            "Choose Mac Audio or Microphone before recording."
+            "error.invalid_source"
         case .microphonePermissionDenied:
-            "Microphone access is off. Enable AudioToText in System Settings → Privacy & Security → Microphone."
+            "error.microphone_permission"
         case .screenRecordingPermissionDenied:
-            "Mac audio capture needs Screen Recording access. Enable AudioToText in System Settings → Privacy & Security → Screen & System Audio Recording, then quit and reopen the app."
+            "error.screen_recording_permission"
         case .noDisplayFound:
-            "No display is available for Mac audio capture."
+            "error.no_display"
         case .noSpeechFound:
-            "Whisper did not find English speech in this recording."
+            "error.no_speech"
         case .modelUnavailable:
-            "The Whisper model could not be loaded. Check your connection for the first download and try again."
+            "error.model_unavailable"
         case .modelNotReady:
-            "Download the selected Whisper model before transcribing. Downloaded models load automatically when selected."
+            "error.model_not_ready"
         case .mediaHasNoAudio:
-            "This file does not contain an audio track that can be transcribed."
+            "error.no_audio"
         }
+    }
+
+    var errorDescription: String? {
+        AppLocalization.string(localizationKey, language: .system)
     }
 }

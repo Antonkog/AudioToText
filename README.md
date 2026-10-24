@@ -1,12 +1,12 @@
 # AudioToText
 
-AudioToText is a free, open-source macOS app that turns English speech into editable text entirely on your Mac. It can transcribe audio and video files, record a microphone, or capture sound playing in other apps.
+AudioToText is a free, open-source macOS app that turns speech in many languages into editable text entirely on your Mac. It can transcribe audio and video files, record a microphone, or capture sound playing in other apps.
 
 No API key, account, subscription, or usage fee is required. Whisper models are downloaded once and then work offline.
 
 ## Download
 
-[**Download AudioToText 0.1.1 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.1.1.dmg) · [SHA-256 checksum](Releases/AudioToText-0.1.1.dmg.sha256)
+[**Download AudioToText 0.2.0 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.2.0.dmg) · [SHA-256 checksum](Releases/AudioToText-0.2.0.dmg.sha256)
 
 Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
@@ -27,10 +27,21 @@ Open the DMG and drag **AudioToText** to the **Applications** folder. This commu
 - Capture Mac audio from YouTube, movies, meetings, and other apps.
 - Record speech, interviews, or dictation from a microphone.
 - Automatically stop any recording after two hours.
-- Choose between three English Whisper models:
-  - **Tiny English** — fastest, approximately 153 MB.
-  - **Base English** — balanced, approximately 147 MB.
-  - **Small English** — most accurate, approximately 487 MB.
+- Choose from English-only or multilingual Whisper models:
+
+  | Model | Languages | Approximate download |
+  | --- | --- | ---: |
+  | Tiny English | English | 153 MB |
+  | Base English | English | 147 MB |
+  | Small English | English | 487 MB |
+  | Tiny Multilingual | Multilingual | 76.6 MB |
+  | Base Multilingual | Multilingual | 147 MB |
+  | Small Multilingual | Multilingual | 486 MB |
+  | Medium Multilingual | Multilingual | 1.53 GB |
+  | Large V3 Multilingual | Multilingual | 627 MB |
+- Automatically detect the spoken language with any multilingual model, or choose manually from every language supported by WhisperKit.
+- Keep the transcript in the language being spoken; AudioToText does not translate it into another language.
+- Switch the app interface instantly using the globe menu. The included interfaces are English, Spanish, Simplified Chinese, Hindi, Arabic, Brazilian Portuguese, French, German, Japanese, and Russian.
 - See download percentage and progress after explicitly pressing **Download**.
 - Automatically load an installed model when it is selected.
 - Use the folder button to reveal an installed model in Finder.
@@ -94,7 +105,7 @@ The DMG and its SHA-256 checksum are written to `dist/`.
 - **Microphone** permission is requested only when microphone recording is used.
 - **Screen & System Audio Recording** permission is required to capture Mac audio.
 
-If Mac Audio reports that access was declined, open **System Settings → Privacy & Security → Screen & System Audio Recording**, enable4AudioToText, then quit and reopen the app.
+If Mac Audio reports that access was declined, open **System Settings → Privacy & Security → Screen & System Audio Recording**, enable AudioToText, then quit and reopen the app.
 
 Local ad-hoc builds receive a new code identity when the executable changes, so macOS may ask for permission again after rebuilding. To preserve identity across builds, sign with an installed Apple code-signing identity:
 

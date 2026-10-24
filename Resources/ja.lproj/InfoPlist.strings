@@ -1,0 +1,3 @@
+"CFBundleTypeName" = "音声または動画";
+"NSMicrophoneUsageDescription" = "AudioToTextは、マイク録音を選択した場合にのみマイクを使用します。";
+"NSScreenCaptureUsageDescription" = "AudioToTextは、動画、Webサイト、その他のアプリを文字起こしするためにシステム音声を取り込みます。";

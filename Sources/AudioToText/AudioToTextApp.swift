@@ -8,19 +8,21 @@ struct AudioToTextApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(controller)
+                .environment(\.locale, controller.interfaceLocale)
+                .environment(\.layoutDirection, controller.interfaceLayoutDirection)
                 .frame(minWidth: 760, minHeight: 600)
         }
         .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("Open Audio or Video…") {
+                Button(controller.localized("command.open_audio_video")) {
                     controller.isShowingImporter = true
                 }
                 .keyboardShortcut("o")
             }
 
             CommandGroup(after: .saveItem) {
-                Button("Save Transcript As…") {
+                Button(controller.localized("command.save_transcript_as")) {
                     controller.saveTranscriptAs()
                 }
                 .keyboardShortcut("s")

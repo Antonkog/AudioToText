@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "AudioToText",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v15)
     ],
@@ -23,6 +24,9 @@ let package = Package(
                 .product(name: "WhisperKit", package: "argmax-oss-swift")
             ],
             path: "Sources/AudioToText",
+            resources: [
+                .process("Resources")
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v5)
             ]

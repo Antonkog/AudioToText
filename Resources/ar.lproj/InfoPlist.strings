@@ -1,0 +1,3 @@
+"CFBundleTypeName" = "صوت أو فيديو";
+"NSMicrophoneUsageDescription" = "يستخدم AudioToText الميكروفون فقط عند اختيار التسجيل من الميكروفون.";
+"NSScreenCaptureUsageDescription" = "يلتقط AudioToText صوت النظام لنسخ الأفلام والمواقع والتطبيقات الأخرى.";

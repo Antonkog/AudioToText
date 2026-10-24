@@ -1,0 +1,3 @@
+"CFBundleTypeName" = "ऑडियो या वीडियो";
+"NSMicrophoneUsageDescription" = "AudioToText माइक्रोफ़ोन का उपयोग केवल तब करता है जब आप माइक्रोफ़ोन रिकॉर्डिंग चुनते हैं।";
+"NSScreenCaptureUsageDescription" = "AudioToText सिस्टम ऑडियो कैप्चर करता है ताकि फ़िल्मों, वेबसाइटों और दूसरे ऐप को ट्रांसक्राइब कर सके।";

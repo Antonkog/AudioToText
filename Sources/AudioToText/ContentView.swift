@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject private var controller: TranscriptionController
+    @State private var isShowingAudioLanguagePicker = false
 
     var body: some View {
         ZStack {
@@ -35,11 +36,11 @@ struct ContentView: View {
         }
         .alert("AudioToText", isPresented: $controller.isShowingError) {
             if controller.errorNeedsScreenRecordingPermission {
-                Button("Open Screen Recording Settings") {
+                Button(controller.localized("button.open_screen_settings")) {
                     controller.openScreenRecordingSettings()
                 }
             }
-            Button("OK", role: .cancel) {}
+            Button(controller.localized("button.ok"), role: .cancel) {}
         } message: {
             Text(controller.errorMessage)
         }
@@ -64,23 +65,94 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("AudioToText")
                     .font(.system(size: 27, weight: .bold, design: .rounded))
-                Text("Private English transcription on your Mac")
+                Text(controller.localized("app.subtitle"))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AppTheme.mutedInk)
             }
 
             Spacer()
 
+            Menu {
+                Button {
+                    controller.selectInterfaceLanguage(.system)
+                } label: {
+                    languageMenuLabel(
+                        controller.localized("language.system_default"),
+                        selected: controller.interfaceLanguage == .system
+                    )
+                }
+
+                Divider()
+
+                ForEach(AppLanguage.selectableLanguages) { language in
+                    Button {
+                        controller.selectInterfaceLanguage(language)
+                    } label: {
+                        languageMenuLabel(
+                            language.nativeName,
+                            selected: controller.interfaceLanguage == language
+                        )
+                    }
+                }
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 24, height: 24)
+                        .background(AppTheme.teal, in: Circle())
+
+                    Text(
+                        controller.interfaceLanguage == .system
+                        ? controller.localized("language.system_default")
+                        : controller.interfaceLanguage.nativeName
+                    )
+                    .lineLimit(1)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                }
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppTheme.ink)
+                .padding(.leading, 5)
+                .padding(.trailing, 9)
+                .padding(.vertical, 4)
+                .background(.white.opacity(0.78), in: Capsule())
+                .overlay(Capsule().stroke(AppTheme.teal.opacity(0.22), lineWidth: 1))
+            }
+            .menuStyle(.borderlessButton)
+            .tint(AppTheme.ink)
+            .fixedSize()
+            .help(controller.localized("settings.interface_language"))
+
             HStack(spacing: 7) {
                 Circle()
                     .fill(controller.isModelReady ? AppTheme.teal : AppTheme.accent)
                     .frame(width: 8, height: 8)
-                Text(controller.isModelReady ? "Whisper ready" : "Free local model")
+                Text(controller.localized(controller.isModelReady ? "header.whisper_ready" : "header.free_local_model"))
                     .font(.system(size: 12, weight: .semibold))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(.white.opacity(0.72), in: Capsule())
+        }
+    }
+
+    private func languageMenuLabel(_ title: String, selected: Bool) -> some View {
+        Label(title, systemImage: selected ? "checkmark" : "circle.fill")
+    }
+
+    private func modelMenuButton(_ model: WhisperModelOption) -> some View {
+        Button {
+            controller.selectModel(model)
+        } label: {
+            HStack {
+                Text(controller.localizedModelName(model))
+                Text(model.downloadSize)
+                if controller.selectedModel == model {
+                    Image(systemName: "checkmark")
+                }
+            }
         }
     }
 
@@ -91,7 +163,7 @@ struct ContentView: View {
                     Button {
                         controller.source = source
                     } label: {
-                        Label(source.title, systemImage: source.symbol)
+                        Label(controller.localized(source.titleKey), systemImage: source.symbol)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(controller.source == source ? Color.white : AppTheme.ink)
                             .frame(maxWidth: .infinity)
@@ -113,34 +185,41 @@ struct ContentView: View {
 
             VStack(spacing: 8) {
                 HStack(spacing: 12) {
-                    Label("Whisper model", systemImage: "cpu")
+                    Label(controller.localized("model.title"), systemImage: "cpu")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(AppTheme.mutedInk)
 
-                    HStack(spacing: 3) {
-                        ForEach(WhisperModelOption.allCases) { model in
-                            Button {
-                                controller.selectModel(model)
-                            } label: {
-                                Text(model.title.replacingOccurrences(of: " English", with: ""))
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(controller.selectedModel == model ? Color.white : AppTheme.ink)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .contentShape(Rectangle())
-                                    .background(
-                                        controller.selectedModel == model ? AppTheme.teal : Color.clear,
-                                        in: RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    )
+                    Menu {
+                        Section(controller.localized("model.group.english")) {
+                            ForEach(WhisperModelOption.englishModels) { model in
+                                modelMenuButton(model)
                             }
-                            .buttonStyle(.plain)
-                            .disabled(controller.isBusy)
                         }
-                    }
-                    .padding(3)
-                    .background(Color.black.opacity(0.055), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
-                    Text(controller.selectedModel.detail)
+                        Section(controller.localized("model.group.multilingual")) {
+                            ForEach(WhisperModelOption.multilingualModels) { model in
+                                modelMenuButton(model)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(controller.localizedModelName(controller.selectedModel))
+                                .lineLimit(1)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(AppTheme.ink)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(Color.black.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .menuStyle(.borderlessButton)
+                    .tint(AppTheme.ink)
+                    .fixedSize()
+                    .disabled(controller.isBusy)
+
+                    Text(controller.modelDetail(controller.selectedModel))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(AppTheme.mutedInk)
 
@@ -150,7 +229,7 @@ struct ContentView: View {
                         Button {
                             controller.performModelAction()
                         } label: {
-                            Label("Download", systemImage: "arrow.down.circle.fill")
+                            Label(controller.localized("button.download"), systemImage: "arrow.down.circle.fill")
                         }
                         .buttonStyle(ModelActionButtonStyle())
                         .disabled(controller.isDownloadingModel || controller.selectedModelIsDownloaded)
@@ -169,9 +248,49 @@ struct ContentView: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help("Open model in Finder")
+                            .help(controller.localized("help.open_model"))
                         }
                     }
+                }
+
+                HStack(spacing: 12) {
+                    Label(controller.localized("language.audio_title"), systemImage: "character.bubble")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AppTheme.mutedInk)
+
+                    Button {
+                        isShowingAudioLanguagePicker.toggle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(controller.audioLanguageDisplayName)
+                                .lineLimit(1)
+                            if controller.selectedModel.isMultilingual {
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                        }
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(AppTheme.ink)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(Color.black.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(controller.isBusy || !controller.selectedModel.isMultilingual)
+                    .popover(isPresented: $isShowingAudioLanguagePicker, arrowEdge: .bottom) {
+                        AudioLanguagePickerView()
+                            .environmentObject(controller)
+                    }
+
+                    Text(
+                        controller.selectedModel.isMultilingual
+                            ? controller.localized("language.multilingual_hint")
+                            : controller.localized("language.english_model_hint")
+                    )
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.mutedInk)
+
+                    Spacer()
                 }
 
                 if controller.isDownloadingModel {
@@ -194,9 +313,9 @@ struct ContentView: View {
                 sourceIllustration
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(controller.source.headline)
+                    Text(controller.localized(controller.source.headlineKey))
                         .font(.system(size: 18, weight: .bold, design: .rounded))
-                    Text(controller.source.instructions)
+                    Text(controller.localized(controller.source.instructionsKey))
                         .font(.system(size: 13))
                         .foregroundStyle(AppTheme.mutedInk)
                         .fixedSize(horizontal: false, vertical: true)
@@ -235,7 +354,7 @@ struct ContentView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .help("Show saved transcript in Finder")
+                        .help(controller.localized("help.show_saved_transcript"))
                     } else {
                         Image(systemName: controller.statusSymbol)
                             .foregroundStyle(controller.statusIsError ? AppTheme.accent : AppTheme.teal)
@@ -247,7 +366,7 @@ struct ContentView: View {
 
                     Spacer()
 
-                    Text("No API key · no usage fee")
+                    Text(controller.localized("privacy.no_api_fee"))
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(AppTheme.teal)
                 }
@@ -277,7 +396,7 @@ struct ContentView: View {
                 Button {
                     controller.cancelTranscription()
                 } label: {
-                    Label("Cancel", systemImage: "xmark.circle.fill")
+                    Label(controller.localized("button.cancel"), systemImage: "xmark.circle.fill")
                 }
                 .buttonStyle(PrimaryButtonStyle(isDestructive: true))
             }
@@ -296,8 +415,10 @@ struct ContentView: View {
                 } label: {
                     Label(
                         controller.selectedFile == nil || controller.savedTranscriptURL != nil
-                            ? (controller.savedTranscriptURL == nil ? "Choose File" : "Choose Another")
-                            : "Transcribe",
+                            ? controller.localized(
+                                controller.savedTranscriptURL == nil ? "button.choose_file" : "button.choose_another"
+                            )
+                            : controller.localized("button.transcribe"),
                         systemImage: controller.selectedFile == nil || controller.savedTranscriptURL != nil
                             ? "folder"
                             : "text.badge.checkmark"
@@ -311,7 +432,9 @@ struct ContentView: View {
                     controller.isRecording ? controller.stopRecording() : controller.startRecording()
                 } label: {
                     Label(
-                        controller.isRecording ? "Stop & Transcribe" : "Start Recording",
+                        controller.localized(
+                            controller.isRecording ? "button.stop_transcribe" : "button.start_recording"
+                        ),
                         systemImage: controller.isRecording ? "stop.fill" : "record.circle"
                     )
                 }
@@ -349,24 +472,40 @@ struct ContentView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Transcript")
+                    Text(controller.localized("transcript.title"))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                     if let output = controller.savedTranscriptURL {
                         Button {
                             controller.revealSavedTranscriptInFinder()
                         } label: {
-                            Label("Saved to \(output.lastPathComponent)", systemImage: "folder.fill")
+                            Label(
+                                controller.localized("transcript.saved_to", output.lastPathComponent),
+                                systemImage: "folder.fill"
+                            )
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(AppTheme.teal)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .help("Show \(output.path) in Finder")
+                        .help(controller.localized("help.show_path", output.path))
                     } else {
-                        Text("Your text stays editable")
+                        Text(controller.localized("transcript.editable"))
                             .font(.system(size: 11))
                             .foregroundStyle(AppTheme.mutedInk)
                     }
+                }
+
+                if controller.completedWithAutomaticLanguage {
+                    Label(
+                        controller.localized(
+                            "language.detected",
+                            controller.detectedLanguageDisplayName
+                        ),
+                        systemImage: "character.magnify"
+                    )
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppTheme.teal)
+                    .padding(.trailing, 8)
                 }
 
                 Spacer()
@@ -374,14 +513,14 @@ struct ContentView: View {
                 Button {
                     controller.copyTranscript()
                 } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
+                    Label(controller.localized("button.copy"), systemImage: "doc.on.doc")
                 }
                 .disabled(controller.transcript.isEmpty)
 
                 Button {
                     controller.saveTranscriptAs()
                 } label: {
-                    Label("Save .txt", systemImage: "square.and.arrow.down")
+                    Label(controller.localized("button.save_txt"), systemImage: "square.and.arrow.down")
                 }
                 .disabled(controller.transcript.isEmpty)
             }
@@ -398,7 +537,7 @@ struct ContentView: View {
                     .padding(12)
 
                 if controller.transcript.isEmpty {
-                    Text("Drop an audio/video file here, record a conversation, or capture audio playing from YouTube and other apps.")
+                    Text(controller.localized("transcript.placeholder"))
                         .font(.system(size: 14))
                         .foregroundStyle(AppTheme.mutedInk.opacity(0.72))
                         .padding(.horizontal, 18)
@@ -413,7 +552,93 @@ struct ContentView: View {
     }
 }
 
+private struct AudioLanguagePickerView: View {
+    @EnvironmentObject private var controller: TranscriptionController
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+
+    private var filteredCodes: [String] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return controller.supportedAudioLanguageCodes }
+        return controller.supportedAudioLanguageCodes.filter { code in
+            code.localizedCaseInsensitiveContains(query)
+                || controller.audioLanguageName(code).localizedCaseInsensitiveContains(query)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(controller.localized("language.choose_audio"))
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+
+            TextField(controller.localized("language.search"), text: $searchText)
+                .textFieldStyle(.roundedBorder)
+
+            ScrollView {
+                LazyVStack(spacing: 3) {
+                    languageButton(
+                        title: controller.localized("language.automatic"),
+                        subtitle: controller.localized("language.automatic_hint"),
+                        selection: .automatic
+                    )
+
+                    Divider().padding(.vertical, 4)
+
+                    ForEach(filteredCodes, id: \.self) { code in
+                        languageButton(
+                            title: controller.audioLanguageName(code),
+                            subtitle: code.uppercased(),
+                            selection: .language(code)
+                        )
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 330, height: 430)
+    }
+
+    private func languageButton(
+        title: String,
+        subtitle: String,
+        selection: AudioLanguageSelection
+    ) -> some View {
+        Button {
+            controller.selectAudioLanguage(selection)
+            dismiss()
+        } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(subtitle)
+                        .font(.system(size: 10))
+                        .foregroundStyle(AppTheme.mutedInk)
+                }
+
+                Spacer()
+
+                if controller.audioLanguageSelection == selection {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AppTheme.teal)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(
+            controller.audioLanguageSelection == selection
+                ? AppTheme.teal.opacity(0.1)
+                : Color.clear,
+            in: RoundedRectangle(cornerRadius: 8)
+        )
+    }
+}
+
 private struct CircularProgressView: View {
+    @EnvironmentObject private var controller: TranscriptionController
     let progress: Double
 
     private var clampedProgress: Double {
@@ -440,8 +665,10 @@ private struct CircularProgressView: View {
         }
         .frame(width: 48, height: 48)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Transcription progress")
-        .accessibilityValue("\(Int(clampedProgress * 100)) percent")
+        .accessibilityLabel(controller.localized("progress.transcription"))
+        .accessibilityValue(
+            controller.localized("progress.percent", String(Int(clampedProgress * 100)))
+        )
     }
 }
 

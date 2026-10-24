@@ -1,0 +1,95 @@
+"app.subtitle" = "Private multilingual transcription on your Mac";
+"header.whisper_ready" = "Whisper ready";
+"header.free_local_model" = "Free local model";
+"settings.interface_language" = "Interface language";
+"language.system_default" = "System Default";
+
+"source.file" = "File";
+"source.mac_audio" = "Mac Audio";
+"source.microphone" = "Microphone";
+"source.file.headline" = "Transcribe an audio or video file";
+"source.mac_audio.headline" = "Capture sound playing on this Mac";
+"source.microphone.headline" = "Record speech from your microphone";
+"source.file.instructions" = "Choose a recording, podcast, voice note, or movie. You can also drag a file anywhere into this window.";
+"source.mac_audio.instructions" = "Start recording, then play a movie, YouTube video, meeting, or any other app. Stop when you want the transcript; recording ends automatically after 2 hours.";
+"source.microphone.instructions" = "Useful for dictation, interviews, and in-person conversations. Stop to transcribe; recording ends automatically after 2 hours.";
+
+"model.title" = "Whisper model";
+"model.group.english" = "English only";
+"model.group.multilingual" = "Multilingual";
+"model.tiny_english" = "Tiny English";
+"model.base_english" = "Base English";
+"model.small_english" = "Small English";
+"model.tiny_multilingual" = "Tiny Multilingual";
+"model.base_multilingual" = "Base Multilingual";
+"model.small_multilingual" = "Small Multilingual";
+"model.medium_multilingual" = "Medium Multilingual";
+"model.large_v3_multilingual" = "Large V3 Multilingual";
+"model.detail.fastest" = "Fastest · %@";
+"model.detail.fast" = "Fast · %@";
+"model.detail.balanced" = "Balanced · %@";
+"model.detail.accurate" = "Accurate · %@";
+"model.detail.most_accurate" = "Most accurate · %@";
+
+"language.audio_title" = "Audio language";
+"language.automatic" = "Automatic";
+"language.automatic_hint" = "Let Whisper detect the spoken language";
+"language.english_model_hint" = "English-only models do not detect other languages.";
+"language.multilingual_hint" = "Automatic detection or manual selection";
+"language.choose_audio" = "Choose audio language";
+"language.search" = "Search languages";
+"language.detected" = "Detected: %@";
+"language.unknown" = "Unknown";
+
+"button.download" = "Download";
+"button.cancel" = "Cancel";
+"button.choose_file" = "Choose File";
+"button.choose_another" = "Choose Another";
+"button.transcribe" = "Transcribe";
+"button.stop_transcribe" = "Stop & Transcribe";
+"button.start_recording" = "Start Recording";
+"button.copy" = "Copy";
+"button.save_txt" = "Save .txt";
+"button.open_screen_settings" = "Open Screen Recording Settings";
+"button.ok" = "OK";
+
+"help.open_model" = "Open model in Finder";
+"help.show_saved_transcript" = "Show saved transcript in Finder";
+"help.show_path" = "Show %@ in Finder";
+"privacy.no_api_fee" = "No API key · no usage fee";
+
+"transcript.title" = "Transcript";
+"transcript.saved_to" = "Saved to %@";
+"transcript.editable" = "Your text stays editable";
+"transcript.placeholder" = "Drop an audio/video file here, record a conversation, or capture audio playing from YouTube and other apps.";
+
+"status.choose_source" = "Choose a source to begin";
+"status.ready_to_transcribe" = "Ready to transcribe %@";
+"status.loading_model" = "Loading %@ from disk…";
+"status.downloading_model" = "Downloading %@ (%@)… %@%%";
+"status.model_ready" = "%@ is ready for offline use";
+"status.cancelling" = "Cancelling transcription…";
+"status.recording_microphone" = "Recording microphone…";
+"status.recording_mac_audio" = "Recording Mac audio… play your source now";
+"status.finishing_recording" = "Finishing recording…";
+"status.transcript_copied" = "Transcript copied";
+"status.saved" = "Saved %@";
+"status.preparing_audio" = "Preparing audio…";
+"status.transcribing" = "Transcribing locally with Whisper…";
+"status.done_saved" = "Done — saved %@";
+"status.cancelled" = "Transcription cancelled";
+
+"error.invalid_source" = "Choose Mac Audio or Microphone before recording.";
+"error.microphone_permission" = "Microphone access is off. Enable AudioToText in System Settings → Privacy & Security → Microphone.";
+"error.screen_recording_permission" = "Mac audio capture needs Screen Recording access. Enable AudioToText in System Settings → Privacy & Security → Screen & System Audio Recording, then quit and reopen the app.";
+"error.no_display" = "No display is available for Mac audio capture.";
+"error.no_speech" = "Whisper did not find speech in this recording.";
+"error.model_unavailable" = "The Whisper model could not be loaded. Check your connection for the first download and try again.";
+"error.model_not_ready" = "Download the selected Whisper model before transcribing. Downloaded models load automatically when selected.";
+"error.no_audio" = "This file does not contain an audio track that can be transcribed.";
+"error.generic" = "%@";
+
+"command.open_audio_video" = "Open Audio or Video…";
+"command.save_transcript_as" = "Save Transcript As…";
+"progress.transcription" = "Transcription progress";
+"progress.percent" = "%@ percent";

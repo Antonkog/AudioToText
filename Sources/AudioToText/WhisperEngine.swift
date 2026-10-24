@@ -1,6 +1,11 @@
 import Foundation
 import WhisperKit
 
+struct TranscriptionOutput: Equatable {
+    let text: String
+    let languageCode: String?
+}
+
 @MainActor
 final class WhisperEngine {
     private var pipeline: WhisperKit?
@@ -52,13 +57,15 @@ final class WhisperEngine {
     func transcribe(
         _ url: URL,
         model: WhisperModelOption,
+        audioLanguage: AudioLanguageSelection,
         onProgress: @escaping @Sendable (Double) -> Void
-    ) async throws -> String {
+    ) async throws -> TranscriptionOutput {
         guard let pipeline, loadedModel == model else { throw AppError.modelNotReady }
 
         onProgress(0)
         let results = try await pipeline.transcribe(
             audioPath: url.path,
+            decodeOptions: Self.decodingOptions(model: model, audioLanguage: audioLanguage),
             callback: { _ in
                 onProgress(pipeline.progress.fractionCompleted)
                 return !Task.isCancelled
@@ -66,7 +73,40 @@ final class WhisperEngine {
         )
         try Task.checkCancellation()
         onProgress(1)
-        return TranscriptUtilities.cleaned(results.map(\.text))
+        let text = TranscriptUtilities.cleaned(results.map(\.text))
+        let languageCode = results.lazy.map(\.language).first(where: { !$0.isEmpty })
+        return TranscriptionOutput(text: text, languageCode: languageCode)
+    }
+
+    nonisolated static func decodingOptions(
+        model: WhisperModelOption,
+        audioLanguage: AudioLanguageSelection
+    ) -> DecodingOptions {
+        guard model.isMultilingual else {
+            return DecodingOptions(
+                task: .transcribe,
+                language: "en",
+                usePrefillPrompt: true,
+                detectLanguage: false
+            )
+        }
+
+        switch audioLanguage {
+        case .automatic:
+            return DecodingOptions(
+                task: .transcribe,
+                language: nil,
+                usePrefillPrompt: true,
+                detectLanguage: true
+            )
+        case let .language(code):
+            return DecodingOptions(
+                task: .transcribe,
+                language: code,
+                usePrefillPrompt: true,
+                detectLanguage: false
+            )
+        }
     }
 
     func unload() {

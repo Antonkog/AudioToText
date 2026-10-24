@@ -1,0 +1,3 @@
+"CFBundleTypeName" = "Audio o vídeo";
+"NSMicrophoneUsageDescription" = "AudioToText usa el micrófono solo cuando eliges grabar con el micrófono.";
+"NSScreenCaptureUsageDescription" = "AudioToText captura el audio del sistema para transcribir películas, sitios web y otras aplicaciones.";
