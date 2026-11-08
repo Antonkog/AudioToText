@@ -28,3 +28,17 @@ extension View {
         modifier(CardStyle())
     }
 }
+
+struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(AppTheme.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(Color.black.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.65 : 1) : 0.45)
+    }
+}

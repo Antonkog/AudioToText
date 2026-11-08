@@ -3,14 +3,18 @@ import SwiftUI
 @main
 struct AudioToTextApp: App {
     @StateObject private var controller = TranscriptionController()
+    @StateObject private var ttsController = TextToSpeechController()
+    @AppStorage("selectedAppMode") private var selectedModeRaw = AppMode.audioToText.rawValue
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(controller)
+                .environmentObject(ttsController)
                 .environment(\.locale, controller.interfaceLocale)
                 .environment(\.layoutDirection, controller.interfaceLayoutDirection)
-                .frame(minWidth: 760, minHeight: 600)
+                .preferredColorScheme(.light)
+                .frame(minWidth: 780, minHeight: 680)
         }
         .windowStyle(.hiddenTitleBar)
         .commands {
@@ -19,6 +23,7 @@ struct AudioToTextApp: App {
                     controller.isShowingImporter = true
                 }
                 .keyboardShortcut("o")
+                .disabled(selectedModeRaw != AppMode.audioToText.rawValue)
             }
 
             CommandGroup(after: .saveItem) {

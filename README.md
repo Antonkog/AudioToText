@@ -1,16 +1,29 @@
 # AudioToText
 
-AudioToText is a free, open-source macOS app that turns speech in many languages into editable text entirely on your Mac. It can transcribe audio and video files, record a microphone, or capture sound playing in other apps.
+AudioToText is a free, open-source macOS app for two private, local workflows:
 
-No API key, account, subscription, or usage fee is required. Whisper models are downloaded once and then work offline.
+- **AudioToText** transcribes audio, video, microphone, and Mac system audio with Whisper.
+- **TextToAudio** turns text into natural speech with Qwen3-TTS, then plays it or saves it as M4A or MP3.
+
+No API key, account, subscription, or usage fee is required. Models are downloaded only after you press **Download** and work offline after preparation.
 
 ## Download
 
-[**Download AudioToText 0.2.1 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.2.1.dmg) · [SHA-256 checksum](Releases/AudioToText-0.2.1.dmg.sha256)
+[**Download AudioToText 0.3.0 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.0.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.0.dmg.sha256)
 
 Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
 ## Screenshots
+
+### Text to audio
+
+Downloading and preparing the 1.7B text-to-speech model with visible progress and cancellation.
+
+![Downloading and preparing the 1.7B text-to-speech model with progress and cancellation](Screenshots/text-to-audio-download.png)
+
+TextToAudio ready for offline speech generation with model, language, and voice controls.
+
+![TextToAudio ready for offline speech generation with model, language, and voice controls](Screenshots/text-to-audio-ready.png)
 
 ### Recording from Mac
 
@@ -24,7 +37,27 @@ Open the DMG and drag **AudioToText** to the **Applications** folder. This commu
 
 ![Transcription finished](Screenshots/mac-audio-transcription-finished.png)
 
-## Features
+## TextToAudio
+
+- Switch between **AudioToText** and **TextToAudio** at the top of the app. The last mode is remembered.
+- Choose one of two local Qwen3-TTS Core ML models:
+
+  | Model | Approximate download | Memory guidance |
+  | --- | ---: | --- |
+  | Qwen3-TTS 0.6B | 1 GB | Recommended for 8 GB and 16 GB Macs |
+  | Qwen3-TTS 1.7B | 2.2 GB | Recommended for 16 GB or more |
+
+- The app checks Apple-silicon architecture, macOS version, physical memory, and free storage before a download. It blocks unsupported systems or insufficient storage and warns before using the 1.7B model below 16 GB.
+- Downloads start only after **Download** and a size confirmation. Progress, cancellation, cache validation, tokenizer preparation, and sequential Core ML prewarming are included.
+- Generate English, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Spanish, or Italian speech.
+- Choose Ryan, Aiden, Ono Anna, Sohee, Eric, Dylan, Serena, Vivian, or Uncle Fu.
+- Generate once, then reuse the same result for playback and both export formats. Editing the text or changing the model, language, or voice invalidates the previous result.
+- Play, pause, or stop inside the app. Save through native macOS panels as M4A or 128-kbps mono MP3.
+- Click a **Saved to…** status to reveal the exact exported file in Finder.
+
+Voice cloning and style-instruction controls are not included in version 0.3.0.
+
+## AudioToText
 
 - Import common audio formats and videos containing an audio track.
 - Open an audio or video file with AudioToText directly from Finder.
@@ -45,44 +78,51 @@ Open the DMG and drag **AudioToText** to the **Applications** folder. This commu
   | Large V3 Multilingual | Multilingual | 627 MB |
 - Automatically detect the spoken language with any multilingual model, or choose manually from every language supported by WhisperKit.
 - Keep the transcript in the language being spoken; AudioToText does not translate it into another language.
-- Switch the app interface instantly using the globe menu. The included interfaces are English, Spanish, Simplified Chinese, Hindi, Arabic, Brazilian Portuguese, French, German, Japanese, and Russian.
-- See download percentage and progress after explicitly pressing **Download**.
-- Automatically load an installed model when it is selected.
-- Use the folder button to reveal an installed model in Finder.
-- Shows real transcription percentage and provides cancellation for files, microphone recordings, and Mac audio.
+- See real progress and cancel file, microphone, and Mac-audio transcription.
 - Edit, copy, and save transcripts as UTF-8 `.txt` files.
 - Automatically save completed transcripts in `~/Documents/AudioToText`.
 - Click **Done — saved…** or **Saved to…** to reveal the exact transcript file in Finder.
 
+## Interface languages
+
+Use the globe menu to switch the interface instantly between System Default, English, Spanish, Simplified Chinese, Hindi, Arabic, Brazilian Portuguese, French, German, Japanese, and Russian. Arabic uses a right-to-left layout. All new TextToAudio controls, status messages, alerts, compatibility guidance, and save panels are localized.
+
 ## Privacy and offline use
 
-AudioToText does not upload audio or text to an app-owned server. Audio is processed locally and temporary recordings are deleted after transcription. Finished transcripts are stored locally in `~/Documents/AudioToText`.
+AudioToText does not upload audio, text, or generated speech to an app-owned server. Processing happens locally. Temporary recordings and MP3 conversion files are removed after use.
 
-The selected model is downloaded from the public [WhisperKit Core ML model repository](https://huggingface.co/argmaxinc/whisperkit-coreml). After the download completes, that model can be used without an internet connection.
+Whisper models come from the public [WhisperKit Core ML model repository](https://huggingface.co/argmaxinc/whisperkit-coreml). TTS models come from the public [TTSKit Core ML model repository](https://huggingface.co/argmaxinc/ttskit-coreml). After an explicitly selected model has downloaded and been prepared, generation does not initiate a network download.
 
 Downloaded models are stored under:
 
 ```text
 ~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/
+~/Documents/huggingface/models/argmaxinc/ttskit-coreml/
 ```
+
+Switching modes unloads the inactive model family to reduce memory use.
 
 ## Requirements
 
 - macOS 15 or newer
-- Apple-silicon Mac; M1 or newer is recommended
+- Apple-silicon Mac
+- 8 GB memory for Qwen3-TTS 0.6B; 16 GB or more is recommended for 1.7B
+- At least the model download size plus 1 GB of available storage
 - Xcode 16 or a compatible Swift 6 toolchain when building from source
+
+The 8 GB compatibility path is covered by unit tests but still needs final validation on physical 8 GB Apple-silicon hardware.
 
 ## Build and run
 
 ```sh
 git clone https://github.com/Antonkog/AudioToText.git
 cd AudioToText
-chmod +x Scripts/build-app.sh
+chmod +x Scripts/build-app.sh Scripts/build-dmg.sh Scripts/build-lame.sh Scripts/generate-icon.swift
 ./Scripts/build-app.sh
 open dist/AudioToText.app
 ```
 
-The first build downloads the Swift package dependencies. In the app, choose a model and press **Download**. AudioToText never starts a model download merely because the selected model changed.
+The first build downloads Swift package dependencies and builds the pinned standalone LAME encoder from its official source after SHA-256 verification. In the app, choose a model and press **Download**. Changing a selected model never begins a download by itself.
 
 For development without creating an app bundle:
 
@@ -102,7 +142,7 @@ Create a distributable DMG with:
 ./Scripts/build-dmg.sh
 ```
 
-The DMG and its SHA-256 checksum are written to `dist/`.
+The DMG and its SHA-256 checksum are written to `dist/`. Models are not included in the DMG.
 
 ## macOS permissions
 
@@ -117,15 +157,12 @@ Local ad-hoc builds receive a new code identity when the executable changes, so 
 CODE_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)" ./Scripts/build-app.sh
 ```
 
-## Technology
+## Technology and licensing
 
-- SwiftUI for the native macOS interface.
-- [WhisperKit](https://github.com/argmaxinc/argmax-oss-swift) for local Core ML Whisper inference.
+- SwiftUI for the native macOS interface and custom waveform brand artwork.
+- [WhisperKit and TTSKit](https://github.com/argmaxinc/argmax-oss-swift) for local Core ML inference.
 - ScreenCaptureKit for Mac system-audio capture.
-- AVFoundation for microphone recording and media audio extraction.
+- AVFoundation for recording, media extraction, M4A output, and playback.
+- [LAME 4.0](https://lame.sourceforge.io/) runs as a separately signed standalone executable for MP3 export. It is not linked into the Swift target. The app bundle includes the LGPL license and [third-party notices](THIRD_PARTY_NOTICES.md).
 
-The model engine is isolated in `WhisperEngine.swift`, allowing another backend to be added later. Python's `faster-whisper` is not the default because its standard CTranslate2 backend does not use Apple Metal; WhisperKit provides a native Core ML path with simpler packaging for this app.
-
-## License
-
-AudioToText is available under the [MIT License](LICENSE). WhisperKit and downloaded model assets retain their respective licenses and notices.
+AudioToText is available under the [MIT License](LICENSE). WhisperKit, TTSKit, LAME, and downloaded model assets retain their respective licenses and notices.

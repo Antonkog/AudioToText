@@ -4,7 +4,13 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject private var controller: TranscriptionController
+    @EnvironmentObject private var ttsController: TextToSpeechController
+    @AppStorage("selectedAppMode") private var selectedModeRaw = AppMode.audioToText.rawValue
     @State private var isShowingAudioLanguagePicker = false
+
+    private var selectedMode: AppMode {
+        AppMode(rawValue: selectedModeRaw) ?? .audioToText
+    }
 
     var body: some View {
         ZStack {
@@ -18,8 +24,15 @@ struct ContentView: View {
 
             VStack(spacing: 18) {
                 header
-                sourceCard
-                transcriptCard
+                modePicker
+                if selectedMode == .audioToText {
+                    sourceCard
+                    transcriptCard
+                } else {
+                    TextToSpeechView()
+                        .environmentObject(controller)
+                        .environmentObject(ttsController)
+                }
             }
             .padding(28)
         }
@@ -32,7 +45,8 @@ struct ContentView: View {
             controller.handleImport(result)
         }
         .onDrop(of: [UTType.fileURL.identifier], isTargeted: $controller.isDropTargeted) { providers in
-            controller.handleDrop(providers)
+            guard selectedMode == .audioToText else { return false }
+            return controller.handleDrop(providers)
         }
         .alert("AudioToText", isPresented: $controller.isShowingError) {
             Button(controller.localized("button.ok"), role: .cancel) {}
@@ -40,22 +54,24 @@ struct ContentView: View {
             Text(controller.errorMessage)
         }
         .onOpenURL { url in
+            switchMode(.audioToText)
             controller.selectFile(url)
             controller.transcribeSelectedFile()
+        }
+        .onAppear {
+            if selectedMode == .textToAudio {
+                controller.deactivate()
+                ttsController.activate()
+            } else {
+                ttsController.deactivate()
+                controller.activate()
+            }
         }
     }
 
     private var header: some View {
         HStack(alignment: .center, spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(AppTheme.ink)
-                    .frame(width: 52, height: 52)
-
-                Image(systemName: "waveform")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
+            BrandMark(size: 52)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("AudioToText")
@@ -122,14 +138,60 @@ struct ContentView: View {
 
             HStack(spacing: 7) {
                 Circle()
-                    .fill(controller.isModelReady ? AppTheme.teal : AppTheme.accent)
+                    .fill(activeModelReady ? AppTheme.teal : AppTheme.accent)
                     .frame(width: 8, height: 8)
-                Text(controller.localized(controller.isModelReady ? "header.whisper_ready" : "header.free_local_model"))
+                Text(controller.localized(activeModelReady ? activeReadyKey : "header.free_local_model"))
                     .font(.system(size: 12, weight: .semibold))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(.white.opacity(0.72), in: Capsule())
+        }
+    }
+
+    private var modePicker: some View {
+        HStack(spacing: 4) {
+            ForEach(AppMode.allCases) { mode in
+                Button {
+                    switchMode(mode)
+                } label: {
+                    Text(controller.localized(mode.titleKey))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(selectedMode == mode ? .white : AppTheme.ink)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(
+                            selectedMode == mode ? AppTheme.ink : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .disabled(controller.isBusy || ttsController.isBusy)
+            }
+        }
+        .padding(4)
+        .background(Color.black.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var activeModelReady: Bool {
+        selectedMode == .audioToText ? controller.isModelReady : ttsController.isModelReady
+    }
+
+    private var activeReadyKey: String {
+        selectedMode == .audioToText ? "header.whisper_ready" : "header.tts_ready"
+    }
+
+    private func switchMode(_ mode: AppMode) {
+        guard selectedMode != mode, !controller.isBusy, !ttsController.isBusy else { return }
+        selectedModeRaw = mode.rawValue
+        if mode == .textToAudio {
+            controller.deactivate()
+            ttsController.activate()
+        } else {
+            ttsController.deactivate()
+            controller.activate()
         }
     }
 
@@ -670,7 +732,7 @@ private struct CircularProgressView: View {
     }
 }
 
-private struct PrimaryButtonStyle: ButtonStyle {
+struct PrimaryButtonStyle: ButtonStyle {
     var isDestructive = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -688,7 +750,7 @@ private struct PrimaryButtonStyle: ButtonStyle {
     }
 }
 
-private struct ModelActionButtonStyle: ButtonStyle {
+struct ModelActionButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {

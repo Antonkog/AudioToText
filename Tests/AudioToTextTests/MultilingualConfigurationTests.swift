@@ -90,6 +90,30 @@ struct MultilingualConfigurationTests {
         #expect(unknownKey == "missing.test.key")
     }
 
+    @Test func everyLocalizationKeepsEnglishFormatArgumentCounts() throws {
+        let repository = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let resources = repository.appendingPathComponent("Sources/AudioToText/Resources")
+
+        func dictionary(language: String) throws -> [String: String] {
+            let url = resources.appendingPathComponent("\(language).lproj/Localizable.strings")
+            return try #require(NSDictionary(contentsOf: url) as? [String: String])
+        }
+
+        let english = try dictionary(language: "en")
+        for language in ["es", "zh-Hans", "hi", "ar", "pt-BR", "fr", "de", "ja", "ru"] {
+            let localized = try dictionary(language: language)
+            for (key, englishFormat) in english {
+                let localizedFormat = try #require(localized[key])
+                let englishCount = englishFormat.components(separatedBy: "%@").count - 1
+                let localizedCount = localizedFormat.components(separatedBy: "%@").count - 1
+                #expect(localizedCount == englishCount, "Argument mismatch for \(language):\(key)")
+            }
+        }
+    }
+
     @Test func downloadedModelRequiresEveryNonemptyCoreFile() throws {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("AudioToText-model-test-\(UUID().uuidString)", isDirectory: true)

@@ -290,6 +290,19 @@ final class TranscriptionController: ObservableObject {
         interfaceLanguage = language
     }
 
+    func activate() {
+        selectedModelIsDownloaded = selectedModel.isDownloaded
+        if selectedModelIsDownloaded, !isModelReady, !isBusy {
+            loadSelectedModelFromDisk()
+        }
+    }
+
+    func deactivate() {
+        guard !isBusy else { return }
+        whisper.unload()
+        isModelReady = false
+    }
+
     func selectAudioLanguage(_ selection: AudioLanguageSelection) {
         guard selectedModel.isMultilingual, !isBusy else { return }
         audioLanguageSelection = selection

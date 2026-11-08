@@ -21,7 +21,8 @@ let package = Package(
         .executableTarget(
             name: "AudioToText",
             dependencies: [
-                .product(name: "WhisperKit", package: "argmax-oss-swift")
+                .product(name: "WhisperKit", package: "argmax-oss-swift"),
+                .product(name: "TTSKit", package: "argmax-oss-swift")
             ],
             path: "Sources/AudioToText",
             resources: [
@@ -33,7 +34,10 @@ let package = Package(
         ),
         .testTarget(
             name: "AudioToTextTests",
-            dependencies: ["AudioToText"],
+            dependencies: [
+                "AudioToText",
+                .product(name: "TTSKit", package: "argmax-oss-swift")
+            ],
             path: "Tests/AudioToTextTests",
             swiftSettings: [
                 .swiftLanguageMode(.v5)

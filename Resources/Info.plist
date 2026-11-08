@@ -8,6 +8,8 @@
     <string>AudioToText</string>
     <key>CFBundleExecutable</key>
     <string>AudioToText</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.audiototext.mac</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -31,9 +33,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-	<string>0.2.1</string>
+	<string>0.3.0</string>
     <key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
     <key>CFBundleLocalizations</key>
     <array>
         <string>en</string>
