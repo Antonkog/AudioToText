@@ -199,8 +199,8 @@ struct TextToSpeechConfigurationTests {
         let plist = try #require(
             PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         )
-        #expect(plist["CFBundleShortVersionString"] as? String == "0.3.0")
-        #expect(plist["CFBundleVersion"] as? String == "5")
+        #expect(plist["CFBundleShortVersionString"] as? String == "0.3.1")
+        #expect(plist["CFBundleVersion"] as? String == "6")
         #expect(plist["CFBundleIconFile"] as? String == "AppIcon")
     }
 }

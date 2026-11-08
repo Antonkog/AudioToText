@@ -9,7 +9,7 @@ No API key, account, subscription, or usage fee is required. Models are download
 
 ## Download
 
-[**Download AudioToText 0.3.0 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.0.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.0.dmg.sha256)
+[**Download AudioToText 0.3.1 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.1.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.1.dmg.sha256)
 
 Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
@@ -25,17 +25,15 @@ TextToAudio ready for offline speech generation with model, language, and voice 
 
 ![TextToAudio ready for offline speech generation with model, language, and voice controls](Screenshots/text-to-audio-ready.png)
 
-### Recording from Mac
+### Recording and transcription
 
-![Recording from Mac](Screenshots/mac-audio-recording.png)
+Recording speech from the microphone with an elapsed-time indicator and the option to stop and transcribe.
 
-### Transcription loading after recording is done
+![Recording speech from the microphone](Screenshots/audio-to-text-recording.png)
 
-![Transcription loading after recording is done](Screenshots/mac-audio-transcription-progress.png)
+Completed transcription with automatic language detection and the locally saved text file.
 
-### Transcription finished
-
-![Transcription finished](Screenshots/mac-audio-transcription-finished.png)
+![Completed transcription with detected language and saved text file](Screenshots/audio-to-text-finished.png)
 
 ## TextToAudio
 
@@ -55,7 +53,7 @@ TextToAudio ready for offline speech generation with model, language, and voice 
 - Play, pause, or stop inside the app. Save through native macOS panels as M4A or 128-kbps mono MP3.
 - Click a **Saved to…** status to reveal the exact exported file in Finder.
 
-Voice cloning and style-instruction controls are not included in version 0.3.0.
+Voice cloning and style-instruction controls are not included in version 0.3.1.
 
 ## AudioToText
 

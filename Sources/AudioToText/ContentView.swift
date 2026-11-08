@@ -155,15 +155,16 @@ struct ContentView: View {
                 Button {
                     switchMode(mode)
                 } label: {
-                    Text(controller.localized(mode.titleKey))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(selectedMode == mode ? .white : AppTheme.ink)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(
-                            selectedMode == mode ? AppTheme.ink : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        )
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(selectedMode == mode ? AppTheme.ink : Color.white.opacity(0.001))
+                        Text(controller.localized(mode.titleKey))
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(selectedMode == mode ? .white : AppTheme.ink)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
