@@ -9,7 +9,7 @@ No API key, account, subscription, or usage fee is required. Models are download
 
 ## Download
 
-[**Download AudioToText 0.3.1 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.1.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.1.dmg.sha256)
+[**Download AudioToText 0.3.2 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.2.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.2.dmg.sha256)
 
 Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
 
@@ -53,7 +53,7 @@ Completed transcription with automatic language detection and the locally saved 
 - Play, pause, or stop inside the app. Save through native macOS panels as M4A or 128-kbps mono MP3.
 - Click a **Saved to…** status to reveal the exact exported file in Finder.
 
-Voice cloning and style-instruction controls are not included in version 0.3.1.
+Voice cloning and style-instruction controls are not included in version 0.3.2.
 
 ## AudioToText
 
@@ -149,7 +149,9 @@ The DMG and its SHA-256 checksum are written to `dist/`. Models are not included
 
 If Mac Audio reports that access was declined, open **System Settings → Privacy & Security → Screen & System Audio Recording**, enable AudioToText, then quit and reopen the app.
 
-Local ad-hoc builds receive a new code identity when the executable changes, so macOS may ask for permission again after rebuilding. To preserve identity across builds, sign with an installed Apple code-signing identity:
+Release 0.3.2 and later use a stable community signing identity so macOS can recognize updates as the same app for Screen Recording permission. The certificate is self-signed, not Apple-notarized, so the first-launch Control-click step above is still required. Users upgrading from 0.3.1 or earlier must grant Screen Recording once more after installing 0.3.2.
+
+Local ad-hoc builds receive a new code identity when the executable changes, so macOS may ask for permission again after rebuilding. To preserve identity across local builds, sign with an installed Apple code-signing identity:
 
 ```sh
 CODE_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)" ./Scripts/build-app.sh
