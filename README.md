@@ -11,7 +11,47 @@ No API key, account, subscription, or usage fee is required. Models are download
 
 [**Download AudioToText 0.3.2 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.2.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.2.dmg.sha256)
 
-Open the DMG and drag **AudioToText** to the **Applications** folder. This community build is ad-hoc signed, so on first launch Control-click AudioToText in Applications, choose **Open**, and confirm **Open**. A Developer ID-signed and Apple-notarized build can remove this first-launch step in a future release.
+AudioToText uses a stable community signature, but it is not signed with a paid Apple Developer ID or notarized by Apple. macOS may therefore report that the developer cannot be verified, or that the app is damaged and cannot be opened.
+
+First, download both files into the same folder and verify that the DMG matches the checksum published in this repository:
+
+```sh
+cd ~/Downloads
+shasum -a 256 -c AudioToText-0.3.2.dmg.sha256
+```
+
+Continue only if Terminal prints `AudioToText-0.3.2.dmg: OK`. Open the DMG and drag **AudioToText** into **Applications**, then use one of the following methods.
+
+### Remove quarantine in Terminal
+
+Use this only for the verified AudioToText download from this repository. The command recursively clears the downloaded-file attributes from this exact app bundle:
+
+```sh
+xattr -cr /Applications/AudioToText.app
+open /Applications/AudioToText.app
+```
+
+### Use Open Anyway
+
+1. Try to open AudioToText and click **Cancel** or **Done** on the warning.
+2. Open **System Settings → Privacy & Security** and scroll to **Security**.
+3. Click **Open Anyway**, authenticate if requested, then click **Open**.
+
+[Apple documents this override](https://support.apple.com/guide/mac-help/mh40617/mac) and notes that the button is available for about one hour after the failed launch. Never use either bypass for a DMG whose checksum does not match.
+
+### Build your own DMG
+
+No paid Apple developer key is needed to build AudioToText locally. Install Xcode 16 or newer, or its command-line tools, then clone the source rather than downloading a prebuilt app:
+
+```sh
+xcode-select --install
+git clone https://github.com/Antonkog/AudioToText.git
+cd AudioToText
+./Scripts/build-dmg.sh
+open dist
+```
+
+The locally created `dist/AudioToText-0.3.2.dmg` and checksum use ad-hoc signing when no signing identity is installed. Because the app was built locally rather than downloaded as an executable, it normally has no internet quarantine flag. If you redistribute that DMG, other Macs will still show the unsigned/unnotarized warning.
 
 ## Screenshots
 
