@@ -4,6 +4,30 @@ import TTSKit
 @testable import AudioToText
 
 struct TextToSpeechConfigurationTests {
+    @Test func runtimeRepositoriesUsePublicMirrorsAndKeepLegacyCacheOrder() throws {
+        #expect(ModelRepositories.whisper == "RedHotAnton/whisperkit-coreml")
+        #expect(ModelRepositories.textToSpeech == "RedHotAnton/ttskit-coreml")
+        #expect(ModelRepositories.tokenizer == "RedHotAnton/Qwen3-0.6B")
+
+        let documents = URL(fileURLWithPath: "/tmp/AudioToText-documents", isDirectory: true)
+        let folders = ModelRepositories.cacheFolders(
+            primary: ModelRepositories.textToSpeech,
+            legacy: ModelRepositories.legacyTextToSpeech,
+            under: documents
+        )
+        #expect(folders.map(\.path) == [
+            "/tmp/AudioToText-documents/huggingface/models/RedHotAnton/ttskit-coreml",
+            "/tmp/AudioToText-documents/huggingface/models/argmaxinc/ttskit-coreml"
+        ])
+        #expect(
+            ModelRepositories.downloadURL(
+                repository: ModelRepositories.tokenizer,
+                filename: "tokenizer.json"
+            )?.absoluteString
+            == "https://huggingface.co/RedHotAnton/Qwen3-0.6B/resolve/main/tokenizer.json"
+        )
+    }
+
     @Test func modelCatalogMatchesReleaseMetadata() {
         #expect(TTSModelOption.allCases == [.compact, .quality])
         #expect(TTSModelOption.compact.rawValue == "0.6b")
@@ -199,8 +223,8 @@ struct TextToSpeechConfigurationTests {
         let plist = try #require(
             PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         )
-        #expect(plist["CFBundleShortVersionString"] as? String == "0.3.2")
-        #expect(plist["CFBundleVersion"] as? String == "7")
+        #expect(plist["CFBundleShortVersionString"] as? String == "0.3.3")
+        #expect(plist["CFBundleVersion"] as? String == "8")
         #expect(plist["CFBundleIconFile"] as? String == "AppIcon")
     }
 }

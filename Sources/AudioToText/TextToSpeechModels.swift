@@ -64,33 +64,45 @@ enum TTSModelOption: String, CaseIterable, Identifiable, Sendable {
     }
 
     static var localRepositoryFolder: URL? {
-        guard let documents = try? FileManager.default.url(
-            for: .documentDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: false
-        ) else { return nil }
-        return documents
-            .appendingPathComponent("huggingface/models", isDirectory: true)
-            .appendingPathComponent("argmaxinc/ttskit-coreml", isDirectory: true)
+        guard let documents = ModelRepositories.documentsDirectory else { return nil }
+        return ModelRepositories.cacheFolder(for: ModelRepositories.textToSpeech, under: documents)
+    }
+
+    static var localRepositoryFolders: [URL] {
+        guard let documents = ModelRepositories.documentsDirectory else { return [] }
+        return ModelRepositories.cacheFolders(
+            primary: ModelRepositories.textToSpeech,
+            legacy: ModelRepositories.legacyTextToSpeech,
+            under: documents
+        )
     }
 
     static var localTokenizerFolder: URL? {
-        guard let documents = try? FileManager.default.url(
-            for: .documentDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: false
-        ) else { return nil }
-        return documents
-            .appendingPathComponent("huggingface/models", isDirectory: true)
-            .appendingPathComponent("Qwen/Qwen3-0.6B", isDirectory: true)
+        guard let documents = ModelRepositories.documentsDirectory else { return nil }
+        return ModelRepositories.cacheFolder(for: ModelRepositories.tokenizer, under: documents)
+    }
+
+    static var localTokenizerFolders: [URL] {
+        guard let documents = ModelRepositories.documentsDirectory else { return [] }
+        return ModelRepositories.cacheFolders(
+            primary: ModelRepositories.tokenizer,
+            legacy: ModelRepositories.legacyTokenizer,
+            under: documents
+        )
+    }
+
+    static func downloadedRepositoryFolder(for model: TTSModelOption) -> URL? {
+        localRepositoryFolders.first { isDownloaded(in: $0, model: model) }
+    }
+
+    static var downloadedTokenizerFolder: URL? {
+        localTokenizerFolders.first(where: isTokenizerDownloaded(in:))
     }
 
     var isDownloaded: Bool {
         guard
-            let folder = Self.localRepositoryFolder,
-            let tokenizerFolder = Self.localTokenizerFolder
+            let folder = Self.downloadedRepositoryFolder(for: self),
+            let tokenizerFolder = Self.downloadedTokenizerFolder
         else { return false }
         return Self.isDownloaded(in: folder, tokenizerFolder: tokenizerFolder, model: self)
     }
@@ -120,7 +132,7 @@ enum TTSModelOption: String, CaseIterable, Identifiable, Sendable {
     }
 
     static func isTokenizerDownloaded(in folder: URL) -> Bool {
-        ["tokenizer.json", "tokenizer_config.json", "config.json"].allSatisfy { filename in
+        ModelRepositories.tokenizerFiles.allSatisfy { filename in
             let file = folder.appendingPathComponent(filename)
             guard let values = try? file.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]) else {
                 return false

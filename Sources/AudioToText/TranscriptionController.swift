@@ -111,17 +111,19 @@ enum WhisperModelOption: String, CaseIterable, Identifiable {
         }
     }
 
-    var localFolder: URL? {
-        guard let documents = try? FileManager.default.url(
-            for: .documentDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: false
-        ) else { return nil }
+    var localFolders: [URL] {
+        guard let documents = ModelRepositories.documentsDirectory else { return [] }
+        return ModelRepositories.cacheFolders(
+            primary: ModelRepositories.whisper,
+            legacy: ModelRepositories.legacyWhisper,
+            under: documents
+        ).map {
+            $0.appendingPathComponent("openai_whisper-\(rawValue)", isDirectory: true)
+        }
+    }
 
-        return documents
-            .appendingPathComponent("huggingface/models/argmaxinc/whisperkit-coreml", isDirectory: true)
-            .appendingPathComponent("openai_whisper-\(rawValue)", isDirectory: true)
+    var localFolder: URL? {
+        localFolders.first(where: Self.isDownloaded(in:)) ?? localFolders.first
     }
 
     var isDownloaded: Bool {

@@ -22,6 +22,7 @@ final class WhisperEngine {
 
         let modelFolder = try await WhisperKit.download(
             variant: model.rawValue,
+            from: ModelRepositories.whisper,
             progressCallback: { progress in
                 onProgress(progress.fractionCompleted)
             }

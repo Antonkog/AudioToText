@@ -168,7 +168,9 @@ final class TextToSpeechController: ObservableObject {
     }
 
     func openModelInFinder() {
-        guard let folder = TTSModelOption.localRepositoryFolder else { return }
+        guard let folder = TTSModelOption.downloadedRepositoryFolder(for: selectedModel)
+            ?? TTSModelOption.localRepositoryFolder
+        else { return }
         NSWorkspace.shared.activateFileViewerSelecting([folder])
     }
 

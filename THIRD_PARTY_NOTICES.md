@@ -11,14 +11,18 @@ AudioToText uses the following open-source components and model assets. Their li
 ## Whisper model assets
 
 - Project: <https://huggingface.co/argmaxinc/whisperkit-coreml>
+- Runtime mirror: <https://huggingface.co/RedHotAnton/whisperkit-coreml>
 - Origin: OpenAI Whisper
 - Purpose: downloaded on demand for local speech recognition.
 
 ## Qwen3-TTS model assets
 
 - Core ML assets: <https://huggingface.co/argmaxinc/ttskit-coreml>
+- Core ML runtime mirror: <https://huggingface.co/RedHotAnton/ttskit-coreml>
+- Tokenizer runtime mirror: <https://huggingface.co/RedHotAnton/Qwen3-0.6B>
 - Original models: <https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice>
-- License: Apache License 2.0
+- Original Qwen model license: Apache License 2.0
+- The upstream Core ML asset repository does not currently declare a separate model-card license.
 - Purpose: downloaded on demand for local text-to-speech generation.
 
 ## LAME 4.0

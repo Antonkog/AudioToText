@@ -18,11 +18,15 @@ final class TTSEngine {
             if !completed { try? removeIncompleteModelCache(for: model) }
         }
 
-        let config = TTSKitConfig(model: model.variant, verbose: false)
+        let config = TTSKitConfig(
+            model: model.variant,
+            modelRepo: ModelRepositories.textToSpeech,
+            verbose: false
+        )
         let folder: URL
         do {
             folder = try await TTSKit.download(config: config) { progress in
-                onProgress(min(0.75, progress.fractionCompleted * 0.75))
+                onProgress(min(0.7, progress.fractionCompleted * 0.7))
             }
         } catch {
             try Task.checkCancellation()
@@ -33,7 +37,14 @@ final class TTSEngine {
             throw TTSError.modelNotFound(folder.path)
         }
 
-        let instance = try await makeKit(model: model, folder: folder)
+        let tokenizerFolder = try await prepareTokenizer { progress in
+            onProgress(0.7 + (progress * 0.05))
+        }
+        let instance = try await makeKit(
+            model: model,
+            folder: folder,
+            tokenizerFolder: tokenizerFolder
+        )
         onProgress(0.78)
         let estimatedPrewarmProgress = Task {
             var fraction = 0.78
@@ -72,11 +83,15 @@ final class TTSEngine {
     }
 
     func loadDownloaded(model: TTSModelOption) async throws {
-        guard let folder = TTSModelOption.localRepositoryFolder, model.isDownloaded else {
+        guard let folder = TTSModelOption.downloadedRepositoryFolder(for: model), model.isDownloaded else {
             throw TTSError.modelNotFound(model.rawValue)
         }
         unload()
-        let instance = try await makeKit(model: model, folder: folder)
+        let instance = try await makeKit(
+            model: model,
+            folder: folder,
+            tokenizerFolder: TTSModelOption.downloadedTokenizerFolder
+        )
         try await instance.loadModels()
         try Task.checkCancellation()
         kit = instance
@@ -123,13 +138,15 @@ final class TTSEngine {
         kit != nil && loadedModel == model
     }
 
-    private func makeKit(model: TTSModelOption, folder: URL) async throws -> TTSKit {
-        let tokenizerFolder = TTSModelOption.localTokenizerFolder.flatMap {
-            TTSModelOption.isTokenizerDownloaded(in: $0) ? $0 : nil
-        }
+    private func makeKit(
+        model: TTSModelOption,
+        folder: URL,
+        tokenizerFolder: URL?
+    ) async throws -> TTSKit {
         let config = TTSKitConfig(
             model: model.variant,
             modelFolder: folder,
+            modelRepo: ModelRepositories.textToSpeech,
             tokenizerFolder: tokenizerFolder,
             speechDecoderMode: .throughputOptimized,
             verbose: false
@@ -137,6 +154,49 @@ final class TTSEngine {
         config.download = false
         config.load = false
         return try await TTSKit(config)
+    }
+
+    private func prepareTokenizer(
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> URL {
+        if let folder = TTSModelOption.downloadedTokenizerFolder {
+            onProgress(1)
+            return folder
+        }
+        guard let folder = TTSModelOption.localTokenizerFolder else {
+            throw TTSError.tokenizerUnavailable("The tokenizer cache folder is unavailable")
+        }
+
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let total = Double(ModelRepositories.tokenizerFiles.count)
+
+        for (index, filename) in ModelRepositories.tokenizerFiles.enumerated() {
+            try Task.checkCancellation()
+            guard let remoteURL = ModelRepositories.downloadURL(
+                repository: ModelRepositories.tokenizer,
+                filename: filename
+            ) else {
+                throw TTSError.tokenizerUnavailable("The tokenizer download URL is invalid")
+            }
+
+            let destination = folder.appendingPathComponent(filename)
+            let (temporaryFile, response) = try await URLSession.shared.download(from: remoteURL)
+            try Task.checkCancellation()
+            guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
+                throw TTSError.tokenizerUnavailable("Failed to download \(filename)")
+            }
+
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.moveItem(at: temporaryFile, to: destination)
+            onProgress(Double(index + 1) / total)
+        }
+
+        guard TTSModelOption.isTokenizerDownloaded(in: folder) else {
+            throw TTSError.tokenizerUnavailable("The downloaded tokenizer cache is incomplete")
+        }
+        return folder
     }
 
     private func removeIncompleteModelCache(for model: TTSModelOption) throws {

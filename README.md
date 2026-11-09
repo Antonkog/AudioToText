@@ -9,7 +9,7 @@ No API key, account, subscription, or usage fee is required. Models are download
 
 ## Download
 
-[**Download AudioToText 0.3.2 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.2.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.2.dmg.sha256)
+[**Download AudioToText 0.3.3 for macOS (.dmg)**](https://github.com/Antonkog/AudioToText/raw/refs/heads/main/Releases/AudioToText-0.3.3.dmg) · [SHA-256 checksum](Releases/AudioToText-0.3.3.dmg.sha256)
 
 AudioToText uses a stable community signature, but it is not signed with a paid Apple Developer ID or notarized by Apple. macOS may therefore report that the developer cannot be verified, or that the app is damaged and cannot be opened.
 
@@ -17,10 +17,10 @@ First, download both files into the same folder and verify that the DMG matches 
 
 ```sh
 cd ~/Downloads
-shasum -a 256 -c AudioToText-0.3.2.dmg.sha256
+shasum -a 256 -c AudioToText-0.3.3.dmg.sha256
 ```
 
-Continue only if Terminal prints `AudioToText-0.3.2.dmg: OK`. Open the DMG and drag **AudioToText** into **Applications**, then use one of the following methods.
+Continue only if Terminal prints `AudioToText-0.3.3.dmg: OK`. Open the DMG and drag **AudioToText** into **Applications**, then use one of the following methods.
 
 ### Remove quarantine in Terminal
 
@@ -51,7 +51,7 @@ cd AudioToText
 open dist
 ```
 
-The locally created `dist/AudioToText-0.3.2.dmg` and checksum use ad-hoc signing when no signing identity is installed. Because the app was built locally rather than downloaded as an executable, it normally has no internet quarantine flag. If you redistribute that DMG, other Macs will still show the unsigned/unnotarized warning.
+The locally created `dist/AudioToText-0.3.3.dmg` and checksum use ad-hoc signing when no signing identity is installed. Because the app was built locally rather than downloaded as an executable, it normally has no internet quarantine flag. If you redistribute that DMG, other Macs will still show the unsigned/unnotarized warning.
 
 ## Screenshots
 
@@ -93,7 +93,7 @@ Completed transcription with automatic language detection and the locally saved 
 - Play, pause, or stop inside the app. Save through native macOS panels as M4A or 128-kbps mono MP3.
 - Click a **Saved to…** status to reveal the exact exported file in Finder.
 
-Voice cloning and style-instruction controls are not included in version 0.3.2.
+Voice cloning and style-instruction controls are not included in version 0.3.3.
 
 ## AudioToText
 
@@ -129,14 +129,17 @@ Use the globe menu to switch the interface instantly between System Default, Eng
 
 AudioToText does not upload audio, text, or generated speech to an app-owned server. Processing happens locally. Temporary recordings and MP3 conversion files are removed after use.
 
-Whisper models come from the public [WhisperKit Core ML model repository](https://huggingface.co/argmaxinc/whisperkit-coreml). TTS models come from the public [TTSKit Core ML model repository](https://huggingface.co/argmaxinc/ttskit-coreml). After an explicitly selected model has downloaded and been prepared, generation does not initiate a network download.
+Whisper models are downloaded from the public [AudioToText WhisperKit mirror](https://huggingface.co/RedHotAnton/whisperkit-coreml), backed by the upstream [WhisperKit Core ML repository](https://huggingface.co/argmaxinc/whisperkit-coreml). TTS models and tokenizer files are downloaded from the public [AudioToText TTSKit](https://huggingface.co/RedHotAnton/ttskit-coreml) and [Qwen tokenizer](https://huggingface.co/RedHotAnton/Qwen3-0.6B) mirrors. After an explicitly selected model has downloaded and been prepared, generation does not initiate a network download.
 
 Downloaded models are stored under:
 
 ```text
-~/Documents/huggingface/models/argmaxinc/whisperkit-coreml/
-~/Documents/huggingface/models/argmaxinc/ttskit-coreml/
+~/Documents/huggingface/models/RedHotAnton/whisperkit-coreml/
+~/Documents/huggingface/models/RedHotAnton/ttskit-coreml/
+~/Documents/huggingface/models/RedHotAnton/Qwen3-0.6B/
 ```
+
+Existing downloads in the previous `argmaxinc` and `Qwen` cache folders remain recognized and do not need to be downloaded again.
 
 Switching modes unloads the inactive model family to reduce memory use.
 
